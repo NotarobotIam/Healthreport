@@ -26,6 +26,9 @@ function Navigation({ user, onLogout }) {
           <Link to="/profile" className="nav-link">
             Profile
           </Link>
+          <a href="http://localhost:5183" target="_blank" rel="noopener noreferrer" className="nav-link">
+            Digital Twin
+          </a>
           <span className="nav-user">Welcome, {user.name}</span>
           <button className="nav-logout btn btn-secondary" onClick={handleLogout}>
             Logout

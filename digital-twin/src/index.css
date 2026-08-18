@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-hud-bg text-hud-text font-sans antialiased;
+}
+
+/* Thin technical scrollbars to match the HUD aesthetic */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3d4f transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #2a3d4f;
+  border-radius: 3px;
+}
+
+/* Subtle background grid used behind panels/viewport for the "scientific HUD" feel */
+.hud-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(62, 230, 224, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(62, 230, 224, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* @layer components ensures plain utility classes (e.g. text-hud-purple)
+   applied alongside .hud-panel-title on the same element win the cascade
+   without needing an explicit `!` important-modifier. */
+@layer components {
+  .hud-panel-title {
+    @apply text-[11px] font-semibold tracking-[0.14em] text-hud-muted uppercase;
+  }
+}
+
+@keyframes hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.hud-status-dot {
+  animation: hud-pulse 2s ease-in-out infinite;
+}
