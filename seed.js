@@ -129,6 +129,84 @@ const seedDatabase = async () => {
         notes: 'Liver function is normal.',
         normal: true,
       },
+      // Imaging reports — mirrors the same 3 reports seeded into
+      // demoStore.js, for parity between the demo-mode and Mongoose paths.
+      // `organMapping` keys must match digital-twin's physiologyKey
+      // namespace (see digital-twin/src/data/anatomy/*.ts).
+      {
+        userId: user._id,
+        testName: 'Chest CT',
+        testDate: new Date('2024-06-01'),
+        testType: 'Imaging',
+        results: {
+          imaging: {
+            modality: 'CT',
+            bodyRegion: 'Chest',
+            findings: 'Heart size normal. Lungs clear bilaterally, no nodules or effusion. No acute cardiopulmonary abnormality.',
+          },
+          organMapping: {
+            heart: { perfusion: 0.60, flow: 0.50, state: 'normal' },
+            lungLeft: { perfusion: 0.72, state: 'normal' },
+            lungRight: { perfusion: 0.70, state: 'normal' },
+          },
+        },
+        doctor: {
+          name: 'Dr. Patel',
+          email: 'patel@clinic.com',
+          clinic: 'Radiology Associates',
+        },
+        notes: 'Routine screening CT, no follow-up needed.',
+        normal: true,
+      },
+      {
+        userId: user._id,
+        testName: 'Orbital MRI (Left)',
+        testDate: new Date('2024-07-20'),
+        testType: 'Imaging',
+        results: {
+          imaging: {
+            modality: 'MRI',
+            bodyRegion: 'Left Orbit',
+            findings: 'Optic nerve normal in caliber and signal. Retina and globe unremarkable. No mass or inflammation.',
+          },
+          organMapping: {
+            'eye.left.retina': { perfusion: 0.58, state: 'normal' },
+            'eye.left.opticNerve': { perfusion: 0.52, state: 'normal' },
+            'eye.left.iop': { pressure: 16.2, state: 'normal' },
+          },
+        },
+        doctor: {
+          name: 'Dr. Nguyen',
+          email: 'nguyen@clinic.com',
+          clinic: 'Ophthalmology & Neuro-Imaging Center',
+        },
+        notes: 'Baseline orbital imaging, no abnormalities.',
+        normal: true,
+      },
+      {
+        userId: user._id,
+        testName: 'Echocardiogram',
+        testDate: new Date('2024-09-12'),
+        testType: 'Imaging',
+        results: {
+          imaging: {
+            modality: 'Ultrasound',
+            bodyRegion: 'Heart',
+            findings: 'Normal left ventricular size and systolic function. Ejection fraction 62%. No valvular abnormality.',
+          },
+          organMapping: {
+            // Deliberately overlaps the Chest CT's `heart` entry with a later date.
+            heart: { perfusion: 0.65, flow: 0.58, pressure: 78, state: 'normal' },
+          },
+        },
+        doctor: {
+          name: 'Dr. Johnson',
+          email: 'johnson@clinic.com',
+          clinic: 'Cardiology Center',
+        },
+        notes: 'Ejection fraction excellent, consistent with prior CT findings.',
+        normal: true,
+      },
     ];
 
     for (const reportData of reports) {

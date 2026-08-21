@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// TEMP for local viewing: macOS AirPlay Receiver already occupies :5000 on
+// this machine, so the backend is running on :5050 instead for now. Revert
+// to :5000 (or make this configurable) before committing.
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5050/api',
 });
 
 // Add token to requests
@@ -26,5 +29,10 @@ export const createReport = (data) => API.post('/reports', data);
 export const updateReport = (id, data) => API.put(`/reports/${id}`, data);
 export const deleteReport = (id) => API.delete(`/reports/${id}`);
 export const getTransposedData = () => API.post('/reports/transpose/data');
+
+// Issues a short-lived, single-use code the digital-twin app (a different
+// origin/port) can exchange for its own session token — see
+// routes/auth.js's /handoff and /handoff/exchange.
+export const requestDigitalTwinHandoff = () => API.post('/auth/handoff');
 
 export default API;

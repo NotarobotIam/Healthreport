@@ -8,6 +8,9 @@ const router = express.Router();
 // Demo mode flag
 const DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Enable demo mode by default
 
+// Mirrors the testType enum in models/TestReport.js
+const VALID_TEST_TYPES = ['Blood', 'Urine', 'Imaging', 'Genetic', 'Other'];
+
 // @route   POST /api/reports
 // @desc    Create a new test report
 // @access  Private
@@ -55,12 +58,19 @@ router.post('/', protect, async (req, res) => {
 });
 
 // @route   GET /api/reports
-// @desc    Get all test reports for the logged-in user
+// @desc    Get all test reports for the logged-in user, optionally scoped to
+//          one testType (?testType=Imaging) so callers only pay for the data
+//          domain they actually need
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
+    const { testType } = req.query;
+    if (testType && !VALID_TEST_TYPES.includes(testType)) {
+      return res.status(400).json({ message: `Invalid testType. Must be one of: ${VALID_TEST_TYPES.join(', ')}` });
+    }
+
     if (DEMO_MODE) {
-      const reports = demoStore.getReportsByUserId(req.user.id);
+      const reports = demoStore.getReportsByUserId(req.user.id, testType);
       return res.status(200).json({
         success: true,
         count: reports.length,
@@ -68,7 +78,8 @@ router.get('/', protect, async (req, res) => {
       });
     }
 
-    const reports = await TestReport.find({ userId: req.user.id }).sort({ testDate: -1 });
+    const filter = { userId: req.user.id, ...(testType ? { testType } : {}) };
+    const reports = await TestReport.find(filter).sort({ testDate: -1 });
 
     res.status(200).json({
       success: true,
@@ -206,17 +217,24 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
-// @route   POST /api/reports/transpose
-// @desc    Get transposed test data for comparison
+// @route   POST /api/reports/transpose/data
+// @desc    Get transposed test data for comparison, optionally scoped to one
+//          testType (?testType=Blood) — same domain-scoping as GET /
 // @access  Private
 router.post('/transpose/data', protect, async (req, res) => {
   try {
+    const { testType } = req.query;
+    if (testType && !VALID_TEST_TYPES.includes(testType)) {
+      return res.status(400).json({ message: `Invalid testType. Must be one of: ${VALID_TEST_TYPES.join(', ')}` });
+    }
+
     let reports;
-    
+
     if (DEMO_MODE) {
-      reports = demoStore.getReportsByUserId(req.user.id);
+      reports = demoStore.getReportsByUserId(req.user.id, testType);
     } else {
-      reports = await TestReport.find({ userId: req.user.id }).sort({ testDate: 1 });
+      const filter = { userId: req.user.id, ...(testType ? { testType } : {}) };
+      reports = await TestReport.find(filter).sort({ testDate: 1 });
     }
 
     if (reports.length === 0) {
@@ -226,17 +244,22 @@ router.post('/transpose/data', protect, async (req, res) => {
       });
     }
 
-    // Transpose data: columns are test values, rows are test dates
+    // Transpose data: columns are test values, rows are test dates.
+    // Nested object values (e.g. an Imaging report's `imaging`/`organMapping`
+    // blobs) aren't sensible chart "metrics" for any testType, so they're
+    // skipped rather than transposed as-is.
     const transposed = {};
     const testDates = [];
 
     reports.forEach((report) => {
       testDates.push(report.testDate);
       Object.keys(report.results).forEach((key) => {
+        const value = report.results[key];
+        if (value !== null && typeof value === 'object') return;
         if (!transposed[key]) {
           transposed[key] = {};
         }
-        transposed[key][report.testDate] = report.results[key];
+        transposed[key][report.testDate] = value;
       });
     });
 

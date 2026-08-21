@@ -2,10 +2,16 @@ import { useState } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import type { TabId } from './components/layout/TopNav';
 import { AnatomyPage } from './pages/AnatomyPage';
-import { OverviewPage, PhysiologyPage, PathologyPage, SimulationPage, DataPage, ReportsPage } from './pages/OtherPages';
+import { DataPage } from './pages/DataPage';
+import { OverviewPage, PhysiologyPage, PathologyPage, SimulationPage, ReportsPage } from './pages/OtherPages';
+import { useRemoteImagingData } from './hooks/useRemoteImagingData';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('anatomy');
+
+  // Fires once per app load; silently stays on mock data if there's no
+  // handoff token or the fetch fails — see the hook's own doc comment.
+  useRemoteImagingData();
 
   return (
     <AppShell activeTab={activeTab} onTabChange={setActiveTab}>

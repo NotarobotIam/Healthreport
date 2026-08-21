@@ -1,6 +1,7 @@
 import { createStore } from 'zustand/vanilla';
-import type { PhysiologyFrame } from '../types';
+import type { BodyRegionState, PhysiologyFrame } from '../types';
 import { generatePhysiologyFrame } from '../data/physiology/mockGenerator';
+import { mergeRealBodyRegions } from '../data/physiology/realBodyRegions';
 
 export interface PhysiologyEngineState {
   isPlaying: boolean;
@@ -8,6 +9,8 @@ export interface PhysiologyEngineState {
   speed: number;
   currentTime: number;
   frame: PhysiologyFrame;
+  /** Real (report-derived) per-region data, merged on top of the mock stream every frame — see setRealBodyRegions. Empty until useRemoteImagingData successfully fetches something. */
+  realBodyRegions: Record<string, BodyRegionState>;
   play: () => void;
   pause: () => void;
   reset: () => void;
@@ -22,6 +25,8 @@ export interface PhysiologyEngineState {
   setPhysiologyFrame: (time: number) => void;
   /** Advances playback by `deltaSeconds` of wall-clock time, scaled by `speed`. Called from PhysiologyClock's useFrame. */
   tick: (deltaSeconds: number) => void;
+  /** Sets the real-data overlay (see hooks/useRemoteImagingData.ts) and immediately re-derives the current frame, rather than waiting for the next tick. */
+  setRealBodyRegions: (regions: Record<string, BodyRegionState>) => void;
 }
 
 const INITIAL_TIME = 0;
@@ -41,6 +46,7 @@ export const physiologyEngine = createStore<PhysiologyEngineState>((set, get) =>
   speed: 1,
   currentTime: INITIAL_TIME,
   frame: generatePhysiologyFrame(INITIAL_TIME),
+  realBodyRegions: {},
 
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
@@ -55,11 +61,22 @@ export const physiologyEngine = createStore<PhysiologyEngineState>((set, get) =>
 
   setPhysiologyFrame: (time) => {
     const clamped = Math.max(0, time);
-    set({ currentTime: clamped, frame: generatePhysiologyFrame(clamped) });
+    const mockFrame = generatePhysiologyFrame(clamped);
+    const { realBodyRegions } = get();
+    const frame: PhysiologyFrame =
+      Object.keys(realBodyRegions).length === 0
+        ? mockFrame
+        : { ...mockFrame, bodyRegions: mergeRealBodyRegions(mockFrame.bodyRegions ?? {}, realBodyRegions) };
+    set({ currentTime: clamped, frame });
   },
 
   tick: (deltaSeconds) => {
     const { currentTime, speed, setPhysiologyFrame } = get();
     setPhysiologyFrame(currentTime + deltaSeconds * speed);
+  },
+
+  setRealBodyRegions: (regions) => {
+    set({ realBodyRegions: regions });
+    get().setPhysiologyFrame(get().currentTime);
   },
 }));

@@ -185,4 +185,50 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/auth/handoff
+// @desc    Issue a short-lived, single-use code the logged-in user can hand
+//          to the digital-twin app (a different origin) to authenticate
+//          there without exposing the long-lived JWT in a URL
+// @access  Private
+router.post('/handoff', protect, (req, res) => {
+  const code = demoStore.createHandoffCode(req.user.id);
+  res.status(200).json({ success: true, code });
+});
+
+// @route   POST /api/auth/handoff/exchange
+// @desc    Exchange a handoff code (see /handoff) for a real session token
+// @access  Public
+router.post('/handoff/exchange', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ message: 'Missing code' });
+    }
+
+    const userId = demoStore.consumeHandoffCode(code);
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid or expired code' });
+    }
+
+    const user = demoStore.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const token = generateToken(userId);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

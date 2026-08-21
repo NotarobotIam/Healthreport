@@ -122,7 +122,7 @@ function ReportDetail() {
                   {Object.entries(report.results || {}).map(([key, value]) => (
                     <tr key={key}>
                       <td>{key}</td>
-                      <td>{value}</td>
+                      <td>{typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}</td>
                     </tr>
                   ))}
                 </tbody>

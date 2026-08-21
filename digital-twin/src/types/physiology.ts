@@ -3,10 +3,12 @@
 // different physiology sources later (mock, recorded patient session, live
 // sensor feed) without changing anything about what the tree *is*.
 //
-// TODO(real-data): every field in this file is a placeholder shape. Real
-// values will eventually come from patient monitoring hardware, an EHR feed,
-// or a reduced-order simulation (see data/physiology/mockGenerator.ts for the
-// current mock implementation and the exact seam where that swap happens).
+// TODO(real-data): heartRate/respiratoryRate/bloodPressure below are still
+// 100% placeholder (see data/physiology/mockGenerator.ts). bodyRegions is
+// the one field with a real seam wired up today: entries can come from an
+// actual Imaging report via data/remote/reportsApi.ts's
+// fetchImagingOrganMapping() (see BodyRegionState.source below), merged
+// on top of the mock stream in engine/physiologyEngine.ts.
 
 export interface BloodPressure {
   systolic: number;
@@ -16,14 +18,19 @@ export interface BloodPressure {
 
 /** Per-region physiological readout, keyed by AnatomyNode.physiologyKey. */
 export interface BodyRegionState {
-  /** 0-1 normalized mock perfusion index. */
+  /** 0-1 normalized perfusion index. */
   perfusion?: number;
-  /** mock mmHg. */
+  /** mmHg. */
   pressure?: number;
-  /** mock relative flow units. */
+  /** relative flow units. */
   flow?: number;
-  /** free-text mock state label, e.g. "normal" | "elevated" | "reduced". */
+  /** free-text state label, e.g. "normal" | "elevated" | "reduced". */
   state?: string;
+  /** Present only when this region was sourced from a real Imaging report; absent/undefined means mock. */
+  source?: 'real';
+  sourceReportId?: string;
+  sourceReportDate?: string;
+  sourceTestName?: string;
 }
 
 export interface PhysiologyFrame {

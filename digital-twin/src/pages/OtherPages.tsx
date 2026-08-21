@@ -36,15 +36,6 @@ export function SimulationPage() {
   );
 }
 
-export function DataPage() {
-  return (
-    <PlaceholderScreen
-      title="Data"
-      description="Raw data source management — 3D scan imports, sensor feeds, and lab results, feeding the asset-swap and physiology integration seams described in the README."
-    />
-  );
-}
-
 export function ReportsPage() {
   return (
     <PlaceholderScreen

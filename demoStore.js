@@ -1,12 +1,21 @@
 // In-memory demo storage for testing without MongoDB
 // This stores data temporarily while the app is running
 
+const crypto = require('crypto');
+
+const HANDOFF_CODE_TTL_MS = 60 * 1000;
+
 class DemoStore {
   constructor() {
     this.users = new Map();
     this.reports = new Map();
     this.nextReportId = 1;
-    
+    // Single-use, short-lived codes used to hand a logged-in session off to
+    // the digital-twin app (a different origin, so it can't read this app's
+    // localStorage token directly) — see routes/auth.js's /handoff and
+    // /handoff/exchange routes.
+    this.handoffCodes = new Map();
+
     // Add a pre-populated demo user
     this.users.set('demo@test.com', {
       _id: 'demo-user-123',
@@ -278,6 +287,101 @@ class DemoStore {
       normal: true,
       createdAt: new Date('2024-12-18'),
     });
+
+    // Imaging reports — feed the digital-twin app's organ-mapping overlay
+    // (see digital-twin/src/data/anatomy/*.ts for the physiologyKey
+    // namespace these `organMapping` keys must match: heart, lungLeft,
+    // lungRight, eye.left.iop, eye.left.retina, eye.left.opticNerve,
+    // eye.left.retinalFlow). report-15 deliberately re-covers `heart` with
+    // a later date than report-13, so "most recent report per key wins"
+    // has something real to resolve.
+    this.reports.set('report-13', {
+      _id: 'report-13',
+      userId: 'demo-user-123',
+      testName: 'Chest CT',
+      testDate: new Date('2024-06-01'),
+      testType: 'Imaging',
+      results: {
+        imaging: {
+          modality: 'CT',
+          bodyRegion: 'Chest',
+          findings: 'Heart size normal. Lungs clear bilaterally, no nodules or effusion. No acute cardiopulmonary abnormality.',
+        },
+        organMapping: {
+          heart: { perfusion: 0.60, flow: 0.50, state: 'normal' },
+          lungLeft: { perfusion: 0.72, state: 'normal' },
+          lungRight: { perfusion: 0.70, state: 'normal' },
+        },
+      },
+      doctor: {
+        name: 'Dr. Patel',
+        email: 'patel@clinic.com',
+        clinic: 'Radiology Associates',
+      },
+      notes: 'Routine screening CT, no follow-up needed.',
+      normal: true,
+      createdAt: new Date('2024-06-01'),
+    });
+
+    this.reports.set('report-14', {
+      _id: 'report-14',
+      userId: 'demo-user-123',
+      testName: 'Orbital MRI (Left)',
+      testDate: new Date('2024-07-20'),
+      testType: 'Imaging',
+      results: {
+        imaging: {
+          modality: 'MRI',
+          bodyRegion: 'Left Orbit',
+          findings: 'Optic nerve normal in caliber and signal. Retina and globe unremarkable. No mass or inflammation.',
+        },
+        organMapping: {
+          'eye.left.retina': { perfusion: 0.58, state: 'normal' },
+          'eye.left.opticNerve': { perfusion: 0.52, state: 'normal' },
+          'eye.left.iop': { pressure: 16.2, state: 'normal' },
+        },
+      },
+      doctor: {
+        name: 'Dr. Nguyen',
+        email: 'nguyen@clinic.com',
+        clinic: 'Ophthalmology & Neuro-Imaging Center',
+      },
+      notes: 'Baseline orbital imaging, no abnormalities.',
+      normal: true,
+      createdAt: new Date('2024-07-20'),
+    });
+
+    this.reports.set('report-15', {
+      _id: 'report-15',
+      userId: 'demo-user-123',
+      testName: 'Echocardiogram',
+      testDate: new Date('2024-09-12'),
+      testType: 'Imaging',
+      results: {
+        imaging: {
+          modality: 'Ultrasound',
+          bodyRegion: 'Heart',
+          findings: 'Normal left ventricular size and systolic function. Ejection fraction 62%. No valvular abnormality.',
+        },
+        organMapping: {
+          // Deliberately overlaps report-13's `heart` entry with a later date.
+          heart: { perfusion: 0.65, flow: 0.58, pressure: 78, state: 'normal' },
+        },
+      },
+      doctor: {
+        name: 'Dr. Johnson',
+        email: 'johnson@clinic.com',
+        clinic: 'Cardiology Center',
+      },
+      notes: 'Ejection fraction excellent, consistent with prior CT findings.',
+      normal: true,
+      createdAt: new Date('2024-09-12'),
+    });
+
+    // Manually-seeded reports go up to report-15 above; start auto-generated
+    // ids past that so a real POST /api/reports never collides with (and
+    // silently overwrites) a seeded report.
+    this.nextReportId = 16;
   }
 
   // User methods
@@ -302,12 +406,12 @@ class DemoStore {
   }
 
   // Report methods
-  getReportsByUserId(userId) {
+  getReportsByUserId(userId, testType) {
     const userReports = [];
     for (let report of this.reports.values()) {
-      if (report.userId === userId) {
-        userReports.push(report);
-      }
+      if (report.userId !== userId) continue;
+      if (testType && report.testType !== testType) continue;
+      userReports.push(report);
     }
     return userReports.sort((a, b) => new Date(b.testDate) - new Date(a.testDate));
   }
@@ -337,6 +441,20 @@ class DemoStore {
 
   deleteReport(id) {
     return this.reports.delete(id);
+  }
+
+  // Handoff code methods (cross-origin auth handoff to the digital-twin app)
+  createHandoffCode(userId) {
+    const code = crypto.randomBytes(16).toString('hex');
+    this.handoffCodes.set(code, { userId, expiresAt: Date.now() + HANDOFF_CODE_TTL_MS });
+    return code;
+  }
+
+  consumeHandoffCode(code) {
+    const entry = this.handoffCodes.get(code);
+    this.handoffCodes.delete(code); // single-use regardless of outcome
+    if (!entry || entry.expiresAt < Date.now()) return null;
+    return entry.userId;
   }
 }
 

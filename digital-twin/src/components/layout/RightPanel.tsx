@@ -32,12 +32,17 @@ function ChildRow({ nodeId }: { nodeId: string }) {
 function PhysiologyPlaceholder({ physiologyKey }: { physiologyKey: string }) {
   const { bodyRegions } = usePhysiologyPlayback();
   const region = bodyRegions?.[physiologyKey];
+  const isReal = region?.source === 'real';
 
   return (
-    <div className="mx-2 mb-2 rounded border border-hud-purple/30 bg-hud-purple/5 p-2.5">
+    <div
+      className={`mx-2 mb-2 rounded border p-2.5 ${
+        isReal ? 'border-hud-green/30 bg-hud-green/5' : 'border-hud-purple/30 bg-hud-purple/5'
+      }`}
+    >
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="hud-panel-title !text-hud-purple">Physiology</span>
-        <Badge tone="mock">Mock Data</Badge>
+        <span className={`hud-panel-title ${isReal ? '!text-hud-green' : '!text-hud-purple'}`}>Physiology</span>
+        <Badge tone={isReal ? 'real' : 'mock'}>{isReal ? 'Report Data' : 'Mock Data'}</Badge>
       </div>
       {!region ? (
         <p className="text-[11px] text-hud-muted">No physiological mapping active for this structure yet.</p>
@@ -70,7 +75,9 @@ function PhysiologyPlaceholder({ physiologyKey }: { physiologyKey: string }) {
         </div>
       )}
       <p className="mt-2 text-[10px] leading-snug text-hud-muted/80">
-        Placeholder interface for future patient sensor data, EHR feeds, or CFD/ROM simulation output — see README.
+        {isReal && region.sourceTestName && region.sourceReportDate
+          ? `From ${region.sourceTestName} — ${new Date(region.sourceReportDate).toLocaleDateString()}`
+          : 'Placeholder interface for future patient sensor data, EHR feeds, or CFD/ROM simulation output — see README.'}
       </p>
     </div>
   );

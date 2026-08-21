@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react';
 
-export function Badge({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'mock' | 'cyan' | 'amber' }) {
+export function Badge({
+  children,
+  tone = 'default',
+}: {
+  children: ReactNode;
+  tone?: 'default' | 'mock' | 'cyan' | 'amber' | 'real';
+}) {
   const toneClasses: Record<string, string> = {
     default: 'bg-hud-panel2 text-hud-muted border-hud-border',
     mock: 'bg-hud-purple/10 text-hud-purple border-hud-purple/40',
     cyan: 'bg-hud-cyan/10 text-hud-cyan border-hud-cyan/40',
     amber: 'bg-hud-amber/10 text-hud-amber border-hud-amber/40',
+    // Reuses the same green already used for "normal" state text / the top-nav status dot.
+    real: 'bg-hud-green/10 text-hud-green border-hud-green/40',
   };
   return (
     <span
