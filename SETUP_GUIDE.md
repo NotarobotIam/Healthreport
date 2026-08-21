@@ -30,7 +30,7 @@ NODE_ENV=development
 
 ### Step 3: Frontend Setup
 ```bash
-cd client
+cd digital-twin
 npm install
 cd ..
 ```
@@ -50,10 +50,10 @@ npm run both
 
 # OR run separately:
 # Terminal 1: npm run dev (backend on port 5000)
-# Terminal 2: cd client && npm start (frontend on port 3000)
+# Terminal 2: npm run web (frontend on port 5183)
 ```
 
-Visit: `http://localhost:3000`
+Visit: `http://localhost:5183`
 
 ---
 
@@ -126,28 +126,37 @@ Healthreport/
 ├── middleware/
 │   └── auth.js           # JWT verification
 │
-└── client/               # React Frontend
+└── digital-twin/          # React Frontend (Vite + TypeScript)
     ├── package.json
+    ├── vite.config.ts     # Includes dev proxy for /api -> backend
+    ├── tailwind.config.js
     ├── src/
-    │   ├── index.js
-    │   ├── App.js
-    │   ├── api.js        # API client
+    │   ├── main.tsx
+    │   ├── App.tsx        # Route tree
+    │   │
+    │   ├── auth/
+    │   │   ├── AuthContext.tsx
+    │   │   ├── RequireAuth.tsx
+    │   │   └── tokenStore.ts
+    │   │
+    │   ├── data/remote/   # apiClient, authApi, userApi, reportsApi
     │   │
     │   ├── components/
-    │   │   ├── Navigation.js
-    │   │   └── Navigation.css
+    │   │   ├── layout/    # TopNav, AppShell
+    │   │   ├── dashboardUi.tsx
+    │   │   └── common.tsx
     │   │
     │   └── pages/
-    │       ├── Login.js
-    │       ├── Register.js
-    │       ├── Dashboard.js
-    │       ├── ReportDetail.js
-    │       ├── TransposeView.js
-    │       ├── Profile.js
-    │       └── (corresponding CSS files)
+    │       ├── LoginPage.tsx
+    │       ├── RegisterPage.tsx
+    │       ├── DashboardPage.tsx
+    │       ├── ReportDetailPage.tsx
+    │       ├── ProfilePage.tsx
+    │       ├── DataPage.tsx
+    │       ├── AnatomyPage.tsx
+    │       └── (Overview/Physiology/Pathology/Simulation/Reports)
     │
-    └── public/
-        └── index.html
+    └── index.html
 ```
 
 ---
@@ -335,12 +344,13 @@ netstat -ano | findstr :5000
 taskkill /PID <PID> /F
 ```
 
-### Issue: CORS Errors in Console
-**Error:** `Access to XMLHttpRequest blocked by CORS policy`
+### Issue: API Requests Failing / 404s from the Frontend
+**Error:** Requests to `/api/...` fail or hang in the browser
 
 **Solution:**
-- Check backend is running on `http://localhost:5000`
-- Check `proxy` in `client/package.json` matches backend URL
+- Check the backend is running on `http://localhost:5000`
+- The Vite dev server proxies `/api` to the backend (see `server.proxy` in `digital-twin/vite.config.ts`) — no CORS handling is needed since both are same-origin from the browser's perspective
+- If the backend runs on a different port, set `API_PROXY_TARGET` before starting the frontend, e.g. `API_PROXY_TARGET=http://localhost:5050 npm run web`
 - Restart both frontend and backend
 
 ### Issue: "Token Expired" Error
@@ -354,11 +364,11 @@ taskkill /PID <PID> /F
 
 **Solution:**
 ```bash
-cd client
+cd digital-twin
 npm cache clean --force
 rm -rf node_modules package-lock.json
 npm install
-npm start
+npm run dev
 ```
 
 ---
@@ -373,19 +383,20 @@ npm run seed        # Populate database with sample data
 npm start           # Start production server
 ```
 
-### Frontend Commands (from `client/` directory)
+### Frontend Commands (from `digital-twin/` directory)
 ```bash
 npm install         # Install dependencies
-npm start           # Start development server
+npm run dev         # Start development server
 npm run build       # Build for production
-npm test            # Run tests
+npm run typecheck   # Type-check with TypeScript
 ```
 
 ### Root Commands (runs both)
 ```bash
 npm run both        # Run backend + frontend concurrently
-npm run client      # Only start frontend
+npm run web         # Only start frontend
 npm run server      # Only start backend
+npm run build       # Build frontend for production
 ```
 
 ---
@@ -453,7 +464,7 @@ curl http://localhost:5000/api/reports \
 
 4. **Build Frontend**
    ```bash
-   cd client && npm run build
+   npm run build   # from project root, builds digital-twin/
    ```
 
 ### Deploy Backend (Example: Heroku)

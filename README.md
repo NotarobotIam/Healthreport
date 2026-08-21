@@ -8,6 +8,7 @@ A full-stack web application for managing and analyzing health test reports with
 - **Report Management**: Upload, view, and manage health test reports
 - **Data Analysis**: Transpose and compare health metrics over time
 - **Data Visualization**: Charts and graphs for trend analysis
+- **4D Digital Twin**: Interactive 3D anatomy and physiology explorer, with real report data (imaging, biomarkers) layered onto the model where available
 - **User Profile**: Manage personal health information
 - **Doctor Access**: Share reports with healthcare providers
 
@@ -26,22 +27,23 @@ A full-stack web application for managing and analyzing health test reports with
 │   └── users.js           # User profile routes
 ├── middleware/
 │   └── auth.js            # JWT authentication middleware
-└── client/                 # React frontend
+└── digital-twin/            # React frontend (Vite + TypeScript)
     ├── src/
+    │   ├── auth/           # AuthContext, RequireAuth, token store
     │   ├── components/
-    │   │   └── Navigation.js
+    │   │   └── layout/     # TopNav, AppShell
     │   ├── pages/
-    │   │   ├── Login.js
-    │   │   ├── Register.js
-    │   │   ├── Dashboard.js
-    │   │   ├── ReportDetail.js
-    │   │   ├── TransposeView.js
-    │   │   └── Profile.js
-    │   ├── api.js         # API client
-    │   ├── App.js         # Main app component
-    │   └── index.js       # React entry point
-    └── public/
-        └── index.html
+    │   │   ├── LoginPage.tsx
+    │   │   ├── RegisterPage.tsx
+    │   │   ├── DashboardPage.tsx
+    │   │   ├── ReportDetailPage.tsx
+    │   │   ├── ProfilePage.tsx
+    │   │   ├── DataPage.tsx
+    │   │   └── AnatomyPage.tsx   # 3D anatomy/physiology explorer
+    │   ├── data/remote/    # API client
+    │   ├── App.tsx         # Route tree
+    │   └── main.tsx        # React entry point
+    └── index.html
 ```
 
 ## Prerequisites
@@ -85,8 +87,8 @@ mongod
 ### 3. Frontend Setup
 
 ```bash
-# Navigate to client directory
-cd client
+# Navigate to the frontend directory
+cd digital-twin
 
 # Install frontend dependencies
 npm install
@@ -104,9 +106,8 @@ npm run dev
 
 **Terminal 2 - Frontend:**
 ```bash
-cd client
-npm start
-# Frontend will run on http://localhost:3000
+npm run web
+# Frontend will run on http://localhost:5183
 ```
 
 ### Option 2: Run Both Concurrently (from root directory)
@@ -205,10 +206,12 @@ NODE_ENV=development
 - **CORS** - Cross-origin resource sharing
 
 ### Frontend
-- **React** - UI library
+- **React 18 + TypeScript** - UI library, built with Vite
 - **React Router** - Client-side routing
-- **Axios** - HTTP client
+- **Zustand** - State management (including a vanilla store for 60fps physiology playback)
+- **Three.js / React Three Fiber / Drei** - 3D anatomy & physiology explorer
 - **Recharts** - Data visualization
+- **Tailwind CSS** - Styling
 
 ## Security Considerations
 
@@ -242,18 +245,19 @@ Check if MongoDB is running and the connection string is correct
 # Change port in .env or kill the process using the port
 ```
 
-### CORS Errors
+### API Requests Failing
 ```
-Make sure the proxy in client/package.json matches your backend URL
+The Vite dev server proxies /api to the backend (digital-twin/vite.config.ts) -
+make sure the backend is running, and that API_PROXY_TARGET matches its port if not 5000
 ```
 
-### React App Not Loading
+### Frontend Not Loading
 ```bash
-cd client
+cd digital-twin
 npm cache clean --force
 rm -rf node_modules
 npm install
-npm start
+npm run dev
 ```
 
 ## Contributing

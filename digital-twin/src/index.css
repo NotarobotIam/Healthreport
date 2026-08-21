@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -16,10 +16,10 @@ body {
   @apply bg-hud-bg text-hud-text font-sans antialiased;
 }
 
-/* Thin technical scrollbars to match the HUD aesthetic */
+/* Thin technical scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2a3d4f transparent;
+  scrollbar-color: #dee2e6 transparent;
 }
 *::-webkit-scrollbar {
   width: 6px;
@@ -29,15 +29,15 @@ body {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #2a3d4f;
+  background-color: #dee2e6;
   border-radius: 3px;
 }
 
-/* Subtle background grid used behind panels/viewport for the "scientific HUD" feel */
+/* Subtle background grid used behind dense panels for the "scientific HUD" feel */
 .hud-grid-bg {
   background-image:
-    linear-gradient(to right, rgba(62, 230, 224, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(62, 230, 224, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(44, 62, 80, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(44, 62, 80, 0.04) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 

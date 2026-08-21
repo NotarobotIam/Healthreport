@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { CameraRig } from './CameraRig';
 import { SceneLighting } from './SceneLighting';
 import { GridFloor } from './GridFloor';
+import { ViewportBackdrop } from './ViewportBackdrop';
 import { PhysiologyClock } from './PhysiologyClock';
 import { BodyRoot } from './body/BodyRoot';
 
@@ -14,8 +15,9 @@ export function DigitalTwinCanvas() {
       camera={{ near: 0.001, far: 100, fov: 42, position: [0, 1.55, 3.3] }}
       gl={{ antialias: true }}
     >
-      <color attach="background" args={['#05080d']} />
-      <fog attach="fog" args={['#05080d', 4, 15]} />
+      <color attach="background" args={['#080b11']} />
+      <fog attach="fog" args={['#121924', 4, 15]} />
+      <ViewportBackdrop />
       <SceneLighting />
       <GridFloor />
       {/*

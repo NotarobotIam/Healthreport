@@ -1,28 +1,67 @@
-import { Tabs } from '../common';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
 
-export type TabId = 'overview' | 'anatomy' | 'physiology' | 'pathology' | 'simulation' | 'data' | 'reports';
-
-const TAB_LABELS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'anatomy', label: 'Anatomy' },
-  { id: 'physiology', label: 'Physiology' },
-  { id: 'pathology', label: 'Pathology' },
-  { id: 'simulation', label: 'Simulation' },
-  { id: 'data', label: 'Data' },
-  { id: 'reports', label: 'Reports' },
+const NAV_LINKS: { to: string; label: string }[] = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/overview', label: 'Overview' },
+  { to: '/anatomy', label: 'Anatomy' },
+  { to: '/physiology', label: 'Physiology' },
+  { to: '/pathology', label: 'Pathology' },
+  { to: '/simulation', label: 'Simulation' },
+  { to: '/data', label: 'Data' },
+  { to: '/reports', label: 'Reports' },
 ];
 
-export function TopNav({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
+/**
+ * The one component that intentionally keeps the OLD dark theme as literal
+ * values instead of `hud-*` tokens: the health-report dashboard's own nav
+ * bar was always dark (#2c3e50), and `hud.panel`/`hud.muted` are now light
+ * (needed for every actual card surface) — these two facts collide on the
+ * same tokens, so this bar opts out of the token swap rather than the rest
+ * of the app opting in to staying dark. See tailwind.config.js's top comment.
+ */
+export function TopNav() {
+  const { user, logout } = useAuth();
+
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-hud-border bg-hud-panel px-4">
-      <div className="flex items-center gap-3">
+    <header className="flex h-12 shrink-0 items-center justify-between bg-[#2c3e50] px-4 shadow-md">
+      <div className="flex shrink-0 items-center gap-3">
         <span className="font-mono text-sm font-bold tracking-[0.2em] text-hud-cyan">VITAL-DT</span>
-        <span className="hidden text-[10px] uppercase tracking-widest text-hud-muted sm:inline">Digital Twin Platform</span>
+        <span className="hidden text-[10px] uppercase tracking-widest text-[#ecf0f1] lg:inline">
+          Digital Twin Platform
+        </span>
       </div>
-      <Tabs tabs={TAB_LABELS} activeId={activeTab} onChange={(id) => onTabChange(id as TabId)} />
-      <div className="flex items-center gap-2 text-hud-muted">
+
+      <nav className="flex flex-1 items-center justify-center gap-1 overflow-x-auto whitespace-nowrap px-4">
+        {NAV_LINKS.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `shrink-0 rounded px-3 py-1.5 text-xs font-medium tracking-wide transition-colors ${
+                isActive ? 'bg-hud-cyan/15 text-hud-cyan' : 'text-[#ecf0f1] hover:bg-white/10'
+              }`
+            }
+          >
+            {link.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="flex shrink-0 items-center gap-3">
         <span className="hud-status-dot h-1.5 w-1.5 rounded-full bg-hud-green" />
-        <span className="text-[10px] uppercase tracking-widest">Normal</span>
+        <span className="hidden text-[10px] uppercase tracking-widest text-[#ecf0f1] sm:inline">Normal</span>
+        <div className="mx-1 h-5 w-px bg-white/15" />
+        <NavLink to="/profile" className="text-xs text-[#ecf0f1] hover:text-hud-cyan">
+          {user?.name ?? 'Profile'}
+        </NavLink>
+        <button
+          type="button"
+          onClick={logout}
+          className="rounded border border-white/20 px-2.5 py-1 text-xs text-[#ecf0f1] transition-colors hover:bg-white/10"
+        >
+          Logout
+        </button>
       </div>
     </header>
   );

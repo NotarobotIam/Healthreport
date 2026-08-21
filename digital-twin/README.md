@@ -2,7 +2,7 @@
 
 An interactive anatomy explorer prototype: hierarchical drill-down through a procedurally-built human body, hover/click-to-zoom navigation, anatomical system filters, transparency/cutaway, and a mocked 4D physiology playback loop. Built as a **framework**, not a one-off demo — see [Extending this build](#extending-this-build) for the seams where real patient-scan geometry and real physiology data are meant to plug in.
 
-This app lives alongside the existing `client/` (the health report dashboard) as an independent Vite/React/TypeScript app — separate frontends, **shared Express/JWT backend**. See [Shared-backend integration](#shared-backend-integration) below for how the two connect.
+This is the anatomy/physiology piece of the single merged **Health Report Dashboard** app (Vite/React/TypeScript, Express/JWT backend) — the Anatomy tab, reached after logging in like every other tab. It was originally built as a standalone app and later merged in; this document still focuses on the anatomy/physiology explorer specifically. See [Report-data integration](#report-data-integration) below for how it draws on the same backend as the rest of the dashboard.
 
 ## Important context for whoever runs this next
 
@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Opens on **http://localhost:5183** (a different port from the existing app's CRA client on 3000 and Express API on 5000, so both apps can run side by side).
+Opens on **http://localhost:5183**, proxying `/api` to the Express backend (default `http://localhost:5000`, override with `API_PROXY_TARGET`). Log in to reach any tab, including Anatomy — the whole app sits behind one auth gate now.
 
 ```bash
 npm run typecheck   # tsc --noEmit — do this first, it's the cheapest way to surface any mistakes
@@ -27,7 +27,7 @@ npm run build        # production build
 
 ## Verification checklist
 
-Setup/typecheck/build and every backend endpoint below have been run and verified (`curl`-tested against a live server, including the full handoff→fetch→merge flow with real seed data). What hasn't been checked is any of this in an actual browser — this list is that walkthrough:
+Setup/typecheck/build and every backend endpoint below have been run and verified (`curl`-tested against a live server, including the full login→fetch→merge flow with real seed data). What hasn't been checked is any of this in an actual browser — this list is that walkthrough:
 
 1. Whole body loads, free-orbits with mouse drag / scroll-to-zoom / right-drag-to-pan.
 2. Hover the left forearm → it highlights; the hand/upper arm/shoulder dim slightly but stay visible (not the forearm's siblings elsewhere in the body — those dim more, to a background level).
@@ -39,8 +39,8 @@ Setup/typecheck/build and every backend endpoint below have been run and verifie
 8. Toggle system filters (left panel) — e.g. turn off Skeletal and finger bones/ribcage/hip joints disappear; turn off Cardiovascular and the retinal vessels disappear.
 9. Press play on the time control (bottom bar or left-panel mini control) — the heart pulses, the torso/lungs subtly expand and contract, the scrubber advances. Pause/reset/speed (0.5x–4x) all work.
 10. Right eye, right arm, both legs: present and navigable, but deliberately simpler (see "Flagship vs. generic branches" below) — this is by design, not a bug.
-11. Opened directly (`localhost:5183`, no dashboard involved): everything above still works, Anatomy shows all-"Mock Data", the Data tab shows "open this from the dashboard" instead of a chart.
-12. Opened via the dashboard's "Digital Twin" nav link: select Heart in the Anatomy tab → Physiology card shows a green "Report Data" badge with values from the *Echocardiogram* report specifically (not the earlier Chest CT) and a "From Echocardiogram — 9/12/2024" line; the Data tab shows a real, populated blood-biomarker chart.
+11. Freshly registered user with no reports yet: Anatomy loads and is fully navigable, everything shows the purple "Mock Data" badge, and the Data tab shows an empty/no-data state rather than a chart.
+12. Logged in as a user with seeded Imaging/Blood reports (e.g. `demo@test.com`): select Heart in the Anatomy tab → Physiology card shows a green "Report Data" badge with values from the *Echocardiogram* report specifically (not the earlier Chest CT) and a "From Echocardiogram — 9/12/2024" line; the Data tab shows a real, populated blood-biomarker chart.
 
 ## Architecture
 
@@ -114,16 +114,16 @@ Building full bespoke geometry for every one of ~230 nodes wasn't a realistic sc
 
 Everything else (right arm, both legs, torso organs, right eye, abdomen) is real, navigable, data-driven anatomy — just with simpler generic geometry and, for finger/toe-level tissue leaves (artery/vein/nerve/tendon/muscle/skin), **data-only nodes** with no geometry at all (they show up in the tree and right panel, described in text, but aren't independently clickable in 3D — see each data file's comments for the exact list). This split is documented inline in `data/anatomy/upperExtremity.ts`, `lowerExtremity.ts`, and `eye.ts`.
 
-## Shared-backend integration
+## Report-data integration
 
-digital-twin reads (never writes) from the same Express/JWT backend the health-report dashboard uses, scoped by request domain rather than fetching everything at once:
+The Anatomy tab reads (never writes) from the same Express/JWT backend as the rest of the dashboard, scoped by request domain rather than fetching everything at once:
 
-- **Auth handoff** (`src/auth/`): digital-twin runs on a different origin than the dashboard, so it can't read the dashboard's `localStorage` token directly. Clicking "Digital Twin" in the dashboard's nav (`client/src/components/Navigation.js`) requests a short-lived, single-use code (`POST /api/auth/handoff`) and opens `http://localhost:5183?code=...`; `src/auth/handoff.ts`'s `ensureAuthBootstrapped()` reads that code once, strips it from the URL immediately, exchanges it (`POST /api/auth/handoff/exchange`) for a real token, and stores that in digital-twin's own `localStorage`. Opened directly with no code, the app works exactly as it always has — standalone, fully on mock data — nothing is gated behind auth.
-- **Real organ-mapping data** (`src/data/remote/reportsApi.ts`'s `fetchImagingOrganMapping`, orchestrated by `src/hooks/useRemoteImagingData.ts`): fetches `GET /api/reports?testType=Imaging` once per app load, folds every report's `results.organMapping` into one map (most recent `testDate` wins per key), and merges it into the physiology engine (`engine/physiologyEngine.ts`'s `setRealBodyRegions`). The right panel's Physiology card shows a green "Report Data" badge + which report/date it came from for any node whose `physiologyKey` has real coverage; everything else keeps showing the purple "Mock Data" badge exactly as before.
-- **Blood biomarker chart** (the **Data** tab, `src/pages/DataPage.tsx`): fetches `POST /api/reports/transpose/data?testType=Blood`, lets you pick metrics, and renders them via `recharts` as a line chart or a min/max/avg/latest table (`src/components/data/`). This tab has no standalone content of its own — opened without a valid token, it shows an explicit "open this from the dashboard" state rather than an empty chart.
+- **Auth**: a single login for the whole app (`src/auth/AuthContext.tsx`, `src/auth/RequireAuth.tsx`), one token in `localStorage` (`src/auth/tokenStore.ts`). The Anatomy tab requires auth exactly like Dashboard/Data/Profile — there's no separate no-auth "standalone" mode anymore. Requests go through `src/data/remote/apiClient.ts`, which hits `/api` (proxied to the backend by Vite in dev — see `vite.config.ts`).
+- **Real organ-mapping data** (`src/data/remote/reportsApi.ts`'s `fetchImagingOrganMapping`, orchestrated by `src/hooks/useRemoteImagingData.ts`): fetches `GET /api/reports?testType=Imaging` once per session, folds every report's `results.organMapping` into one map (most recent `testDate` wins per key), and merges it into the physiology engine (`engine/physiologyEngine.ts`'s `setRealBodyRegions`). The right panel's Physiology card shows a green "Report Data" badge + which report/date it came from for any node whose `physiologyKey` has real coverage; everything else keeps showing the purple "Mock Data" badge exactly as before.
+- **Blood biomarker chart** (the **Data** tab, `src/pages/DataPage.tsx`): fetches `POST /api/reports/transpose/data?testType=Blood`, lets you pick metrics, and renders them via `recharts` as a line chart, a summary table, and a full transposed table (`src/components/data/`). With no reports yet, it shows an empty state rather than a chart.
 - **`AnatomyNode.physiologyKey` is the join key** between real report data and the 3D view — currently only `heart`, `lungLeft`, `lungRight`, and the four `eye.left.*` keys have any anatomy-side mapping (grep `data/anatomy/*.ts` for `physiologyKey` for the exact list). Real data for anything else (liver, kidneys, etc.) has nowhere to attach until that node also gets a `physiologyKey` — a small, separate follow-on, not part of this feature.
 
-Backend-side changes live in the repo root, not here: `routes/reports.js` (the `?testType=` filtering both digital-twin calls above rely on), `routes/auth.js` (the two handoff endpoints), `demoStore.js` (the actually-live in-memory data path — see its own comments on `DEMO_MODE`), and 3 seeded `Imaging` reports (Chest CT, Orbital MRI, Echocardiogram) providing the real data this section describes.
+Backend-side pieces live in the repo root, not here: `routes/reports.js` (the `?testType=` filtering both digital-twin calls above rely on), `routes/auth.js`/`routes/users.js` (login/register/session), `demoStore.js` (the actually-live in-memory data path — see its own comments on `DEMO_MODE`), and 3 seeded `Imaging` reports (Chest CT, Orbital MRI, Echocardiogram) providing the real data this section describes.
 
 ## Known risk areas
 
@@ -133,7 +133,7 @@ Flagging these explicitly rather than presenting the build as more verified than
 - **`camera-controls`' exact runtime behavior** (`minDistance`, `dollyToCursor`, `smoothTime`, `fitToBox`) — types check out and it compiles, but whether camera moves actually look/feel right (not just type-correct) needs a browser. `scene/CameraRig.tsx` still wraps camera calls in a `try/catch` as a safety net regardless.
 - **Hand-authored `cameraTarget` positions** (in `data/anatomy/*.ts`) are approximate — computed from the same body-proportion constants the geometry uses, but by hand, not verified visually. Expect some shots to be framed a little loosely; none should point at empty space, since most non-flagship nodes fall back to live `fitToBox` rather than a hand-guessed camera position.
 - An `ErrorBoundary` (`components/ErrorBoundary.tsx`) wraps the `<Canvas>` specifically because this is the highest-density hand-written, visually-unverified code in the app — if one component has a mistake, you should see a small in-place error message instead of a blank white screen, and the rest of the UI (nav, panels) should keep working.
-- **The auth handoff and real-data fetch have been verified at the network level** (`curl`/Node `fetch` scripts exercising the actual running backend end to end — login → handoff code → exchange → authenticated fetch → merge), not by clicking through it in a browser. The one thing that specifically needs a browser to confirm: that `window.open` reusing a named tab, and the `?code=` URL actually getting cleaned up, both feel right in practice.
+- **Auth and the real-data fetch have been verified at the network level** (`curl`/Node `fetch` scripts exercising the actual running backend end to end — login → authenticated fetch → merge into the physiology engine), not by clicking through it in a browser.
 
 ## Extending this build
 
@@ -142,6 +142,6 @@ Flagging these explicitly rather than presenting the build as more verified than
 - **More `physiologyKey` coverage**: liver, kidneys, and everything else in `data/anatomy/torsoOrgans.ts` have no `physiologyKey` yet, so real report data has nowhere to attach for them today — add the key to the node, and an `organMapping` entry using that key on any Imaging report will start showing up automatically, no other code changes needed.
 - **Sensor measurements / CFD / ROM outputs**: same seam as real physiology — anything that can produce a `PhysiologyFrame` per timestamp (or interpolate between recorded ones) drops in at `physiologyEngine.setPhysiologyFrame`.
 - **More anatomical detail**: add nodes to the relevant `data/anatomy/*.ts` file (or a new branch file, registered in `data/anatomy/index.ts`), then a matching `<SelectableMesh>` in a `scene/body/**` or `scene/eye/**` component. No other system needs to know a new node exists.
-- **Deep-linking / shareable URLs**: not implemented (local React/zustand state only, no router) — would mean introducing `react-router` and syncing `selectedNodeId` to the URL.
+- **Deep-linking / shareable URLs into a specific node**: the app now has `react-router` for top-level tabs (`/anatomy`, `/dashboard`, etc.), but the Anatomy tab's internal `selectedNodeId` (zustand, `useAnatomyStore`) still isn't synced to the URL — reloading or sharing a link into `/anatomy` always lands on Whole Body, not whatever node was last selected. Would mean reading/writing `selectedNodeId` as a query or path param.
 - **Real medical imaging modes**: the X-Ray/CT/MRI buttons are stylized visibility/opacity presets (`store/useViewStore.ts`'s `presetForViewMode`), not simulated imaging — there's no volumetric/Hounsfield-unit data to render.
 - **Performance headroom**: geometry/material sharing, merged (not instanced) vessel geometry, and physiology-out-of-React-state are already in place (see code comments in `scene/primitives/`). Not yet built: a real LOD asset pipeline and Draco decompression — both wait on there being real imported binary assets to apply them to.

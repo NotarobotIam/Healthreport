@@ -7,9 +7,10 @@ Full-stack health report management system with user authentication, test report
 - **Backend:** Node.js + Express.js
 - **Database:** MongoDB + Mongoose
 - **Authentication:** JWT
-- **Frontend:** React 18 + React Router v6
+- **Frontend:** React 18 + TypeScript, built with Vite, React Router v6, Zustand
+- **3D:** Three.js + React Three Fiber + Drei (anatomy/physiology explorer)
 - **Charts:** Recharts
-- **Styling:** CSS3
+- **Styling:** Tailwind CSS
 
 ---
 
@@ -18,18 +19,18 @@ Full-stack health report management system with user authentication, test report
 ```bash
 # Setup
 npm install                    # Install backend deps
-cd client && npm install       # Install frontend deps
+cd digital-twin && npm install # Install frontend deps
 
 # Development
 npm run dev                    # Start backend (with reload)
-cd client && npm start        # Start frontend (separate terminal)
-npm run both                  # Run backend + frontend together
+npm run web                    # Start frontend (separate terminal)
+npm run both                   # Run backend + frontend together
 
 # Database
 npm run seed                  # Load sample data
 
 # Production
-cd client && npm run build    # Build React app
+npm run build                 # Build React app (from root, builds digital-twin/)
 npm start                     # Start server
 ```
 
@@ -50,19 +51,20 @@ npm start                     # Start server
 | `middleware/auth.js` | JWT verification |
 | `seed.js` | Sample data generator |
 
-### Frontend Files
+### Frontend Files (`digital-twin/`)
 
 | File | Purpose |
 |------|---------|
-| `src/App.js` | Main app router |
-| `src/api.js` | API client & HTTP calls |
-| `src/pages/Login.js` | Login form |
-| `src/pages/Register.js` | Registration form |
-| `src/pages/Dashboard.js` | Report list & add form |
-| `src/pages/TransposeView.js` | Data analysis & charts |
-| `src/pages/ReportDetail.js` | View/edit single report |
-| `src/pages/Profile.js` | User profile |
-| `src/components/Navigation.js` | Header navigation |
+| `src/App.tsx` | Route tree, auth gating, Anatomy lazy-mount |
+| `src/data/remote/apiClient.ts` | API client & HTTP calls |
+| `src/pages/LoginPage.tsx` | Login form |
+| `src/pages/RegisterPage.tsx` | Registration form |
+| `src/pages/DashboardPage.tsx` | Report list & add form |
+| `src/pages/DataPage.tsx` | Data analysis & charts (incl. transposed view) |
+| `src/pages/ReportDetailPage.tsx` | View/edit single report |
+| `src/pages/ProfilePage.tsx` | User profile |
+| `src/pages/AnatomyPage.tsx` | 3D anatomy & physiology explorer |
+| `src/components/layout/TopNav.tsx` | Header navigation |
 
 ---
 
@@ -77,8 +79,9 @@ Add to API headers → Protected endpoints verify token
 **Files Involved:**
 - `routes/auth.js` - Token generation
 - `middleware/auth.js` - Token verification
-- `client/src/api.js` - Token injection
-- `client/src/App.js` - Token management
+- `digital-twin/src/auth/tokenStore.ts` - Token storage
+- `digital-twin/src/auth/AuthContext.tsx` - Token/session management
+- `digital-twin/src/auth/RequireAuth.tsx` - Route-level auth gating
 
 ### Report Management Flow
 ```
@@ -89,8 +92,8 @@ MongoDB storage → Return to frontend → Update UI
 **Files Involved:**
 - `models/TestReport.js` - Schema
 - `routes/reports.js` - Endpoints
-- `client/pages/Dashboard.js` - UI
-- `client/api.js` - HTTP calls
+- `digital-twin/src/pages/DashboardPage.tsx` - UI
+- `digital-twin/src/data/remote/reportsApi.ts` - HTTP calls
 
 ### Data Transpose Logic
 ```
@@ -101,7 +104,8 @@ Display with statistics
 
 **Files Involved:**
 - `routes/reports.js` - `POST /transpose/data`
-- `client/pages/TransposeView.js` - UI & charts
+- `digital-twin/src/pages/DataPage.tsx` - UI & charts
+- `digital-twin/src/components/data/TransposedDataTable.tsx` - full transposed table
 - `recharts` - Chart visualization
 
 ---
@@ -146,8 +150,8 @@ testCategory: {
 }
 ```
 
-2. **Update Form** (`client/src/pages/Dashboard.js`)
-```javascript
+2. **Update Form** (`digital-twin/src/pages/DashboardPage.tsx`)
+```tsx
 <select name="testCategory">
   <option>Routine</option>
   <option>Follow-up</option>
@@ -216,9 +220,9 @@ jwt.sign(id, secret, { expiresIn: '7d' })  // Change duration
 3. Add display in `ReportDetail.js`
 
 ### Change Frontend Port
-In `client/package.json`:
-```json
-"start": "PORT=3001 react-scripts start"
+In `digital-twin/vite.config.ts`:
+```ts
+server: { port: 5184 }
 ```
 
 ### Add Authentication to More Routes
@@ -338,8 +342,8 @@ curl http://localhost:5000/api/reports \
 
 ## Version Info
 
-- Node.js: v14+
-- React: 18.2.0
+- Node.js: v18+
+- React: 18 (TypeScript, Vite)
 - Express: 4.18.2
 - MongoDB: 5.0+
 

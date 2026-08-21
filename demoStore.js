@@ -1,20 +1,11 @@
 // In-memory demo storage for testing without MongoDB
 // This stores data temporarily while the app is running
 
-const crypto = require('crypto');
-
-const HANDOFF_CODE_TTL_MS = 60 * 1000;
-
 class DemoStore {
   constructor() {
     this.users = new Map();
     this.reports = new Map();
     this.nextReportId = 1;
-    // Single-use, short-lived codes used to hand a logged-in session off to
-    // the digital-twin app (a different origin, so it can't read this app's
-    // localStorage token directly) — see routes/auth.js's /handoff and
-    // /handoff/exchange routes.
-    this.handoffCodes = new Map();
 
     // Add a pre-populated demo user
     this.users.set('demo@test.com', {
@@ -441,20 +432,6 @@ class DemoStore {
 
   deleteReport(id) {
     return this.reports.delete(id);
-  }
-
-  // Handoff code methods (cross-origin auth handoff to the digital-twin app)
-  createHandoffCode(userId) {
-    const code = crypto.randomBytes(16).toString('hex');
-    this.handoffCodes.set(code, { userId, expiresAt: Date.now() + HANDOFF_CODE_TTL_MS });
-    return code;
-  }
-
-  consumeHandoffCode(code) {
-    const entry = this.handoffCodes.get(code);
-    this.handoffCodes.delete(code); // single-use regardless of outcome
-    if (!entry || entry.expiresAt < Date.now()) return null;
-    return entry.userId;
   }
 }
 

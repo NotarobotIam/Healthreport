@@ -18,13 +18,14 @@ router.get('/profile', protect, async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
+      const { password, ...safeUser } = user;
       return res.status(200).json({
         success: true,
-        user,
+        user: safeUser,
       });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('-password');
 
     res.status(200).json({
       success: true,
@@ -48,9 +49,10 @@ router.put('/profile', protect, async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
       Object.assign(user, { name, dateOfBirth, gender, phone });
+      const { password, ...safeUser } = user;
       return res.status(200).json({
         success: true,
-        user,
+        user: safeUser,
       });
     }
 
@@ -58,7 +60,7 @@ router.put('/profile', protect, async (req, res) => {
       req.user.id,
       { name, dateOfBirth, gender, phone },
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     res.status(200).json({
       success: true,

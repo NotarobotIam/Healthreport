@@ -5,7 +5,7 @@ export function Badge({
   tone = 'default',
 }: {
   children: ReactNode;
-  tone?: 'default' | 'mock' | 'cyan' | 'amber' | 'real';
+  tone?: 'default' | 'mock' | 'cyan' | 'amber' | 'real' | 'success' | 'danger';
 }) {
   const toneClasses: Record<string, string> = {
     default: 'bg-hud-panel2 text-hud-muted border-hud-border',
@@ -14,6 +14,8 @@ export function Badge({
     amber: 'bg-hud-amber/10 text-hud-amber border-hud-amber/40',
     // Reuses the same green already used for "normal" state text / the top-nav status dot.
     real: 'bg-hud-green/10 text-hud-green border-hud-green/40',
+    success: 'bg-hud-green/10 text-hud-green border-hud-green/40',
+    danger: 'bg-hud-red/10 text-hud-red border-hud-red/40',
   };
   return (
     <span
@@ -95,7 +97,7 @@ export function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1 w-full cursor-pointer accent-[#3ee6e0]"
+        className="h-1 w-full cursor-pointer accent-[#3498db]"
       />
     </div>
   );
@@ -109,33 +111,6 @@ export function Stat({ label, value, unit }: { label: string; value: string | nu
         {value}
         {unit && <span className="ml-0.5 text-[10px] text-hud-muted">{unit}</span>}
       </span>
-    </div>
-  );
-}
-
-export function Tabs({
-  tabs,
-  activeId,
-  onChange,
-}: {
-  tabs: { id: string; label: string }[];
-  activeId: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={`rounded px-3 py-1.5 text-xs font-medium tracking-wide transition-colors ${
-            activeId === tab.id ? 'bg-hud-cyan/15 text-hud-cyan' : 'text-hud-muted hover:bg-hud-panel2 hover:text-hud-text'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
     </div>
   );
 }

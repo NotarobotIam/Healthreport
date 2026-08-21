@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "client": "cd client && npm start",
-    "build": "cd client && npm run build",
+    "web": "cd digital-twin && npm run dev",
+    "build": "cd digital-twin && npm run build",
     "server": "node server.js",
-    "both": "concurrently \"npm run server\" \"npm run client\"",
+    "both": "concurrently \"npm run server\" \"npm run web\"",
     "seed": "node seed.js"
   },
   "keywords": [

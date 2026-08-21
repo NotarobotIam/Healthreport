@@ -3,6 +3,7 @@ import { useBloodBiomarkers } from '../hooks/useBloodBiomarkers';
 import { MetricSelector } from '../components/data/MetricSelector';
 import { BloodBiomarkerChart } from '../components/data/BloodBiomarkerChart';
 import { MetricSummaryTable } from '../components/data/MetricSummaryTable';
+import { TransposedDataTable } from '../components/data/TransposedDataTable';
 import { PlaceholderScreen } from '../components/PlaceholderScreen';
 import { SectionLabel } from '../components/common';
 
@@ -39,12 +40,7 @@ export function DataPage() {
   }
 
   if (status === 'unauthenticated') {
-    return (
-      <PlaceholderScreen
-        title="Data"
-        description="Open this from the Health Report Dashboard's nav link to see this patient's blood biomarker history. The Anatomy tab works standalone; this chart's data comes from the shared backend."
-      />
-    );
+    return <PlaceholderScreen title="Data" description="Please log in to see this patient's blood biomarker history." />;
   }
 
   if (status === 'error' || !data) {
@@ -88,7 +84,16 @@ export function DataPage() {
         ) : view === 'chart' ? (
           <BloodBiomarkerChart data={data} selectedMetrics={selected} />
         ) : (
-          <MetricSummaryTable data={data} selectedMetrics={selected} />
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-hud-muted">Summary</h3>
+              <MetricSummaryTable data={data} selectedMetrics={selected} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-hud-muted">Complete Data</h3>
+              <TransposedDataTable data={data} selectedMetrics={selected} />
+            </div>
+          </div>
         )}
       </div>
     </div>

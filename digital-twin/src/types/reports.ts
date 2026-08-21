@@ -10,6 +10,12 @@ export interface ImagingMetadata {
   findings?: string;
 }
 
+export interface ReportDoctor {
+  name?: string;
+  email?: string;
+  clinic?: string;
+}
+
 export interface ReportDTO {
   _id: string;
   testName: string;
@@ -20,6 +26,8 @@ export interface ReportDTO {
     organMapping?: Record<string, BodyRegionState>;
     [key: string]: unknown;
   };
+  doctor?: ReportDoctor;
+  notes?: string;
   normal?: boolean;
 }
 

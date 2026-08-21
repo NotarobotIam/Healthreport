@@ -2,7 +2,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { parseMetricValue } from '../../utils/parseMetricValue';
 import type { TransposeResponse } from '../../types';
 
-const SERIES_COLORS = ['#3ee6e0', '#f5a623', '#ef4444', '#22c55e', '#a855f7', '#3b82f6', '#eab308'];
+const SERIES_COLORS = ['#3498db', '#f5a623', '#dc3545', '#28a745', '#a855f7', '#3b82f6', '#eab308'];
 
 interface BloodBiomarkerChartProps {
   data: TransposeResponse;
@@ -27,10 +27,10 @@ export function BloodBiomarkerChart({ data, selectedMetrics }: BloodBiomarkerCha
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1c2a38" />
-          <XAxis dataKey="date" tick={{ fill: '#5c7080', fontSize: 11 }} />
-          <YAxis tick={{ fill: '#5c7080', fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: '#0a1018', border: '1px solid #1c2a38', fontSize: 12 }} labelStyle={{ color: '#c9d6e0' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#ecf0f1" />
+          <XAxis dataKey="date" tick={{ fill: '#7f8c8d', fontSize: 11 }} />
+          <YAxis tick={{ fill: '#7f8c8d', fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #ecf0f1', fontSize: 12 }} labelStyle={{ color: '#2c3e50' }} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {selectedMetrics.map((metric, i) => (
             <Line

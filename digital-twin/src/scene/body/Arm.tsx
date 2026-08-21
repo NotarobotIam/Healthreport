@@ -88,6 +88,7 @@ function DetailedLeftArm() {
 
 /** Simplified mirror for the right arm — see upperExtremity.ts data file for the flagship/generic rationale. */
 function GenericArm({ side }: { side: Side }) {
+  const mirror = SIDE_SIGN[side];
   const shoulderGeometry = useMemo(() => cachedGeometry('arm.shoulder', () => new THREE.SphereGeometry(0.052, 16, 12)), []);
   const upperArmGeometry = useMemo(
     () => cachedGeometry('arm.generic.upperArm', () => new THREE.CylinderGeometry(0.027, 0.023, ARM.upperArmLength * 0.94, 12)),
@@ -97,12 +98,24 @@ function GenericArm({ side }: { side: Side }) {
     () => cachedGeometry('arm.generic.forearm', () => new THREE.CylinderGeometry(0.019, 0.015, ARM.forearmLength * 0.94, 12)),
     [],
   );
-  const handGeometry = useMemo(
-    () => cachedGeometry('arm.generic.hand', () => new THREE.CapsuleGeometry(0.023, ARM.handLength * 0.6, 3, 8)),
+  const palmGeometry = useMemo(
+    () => cachedGeometry('arm.generic.hand.palm', () => new THREE.BoxGeometry(0.062, 0.04, 0.018)),
+    [],
+  );
+  const fingerGeometry = useMemo(
+    () => cachedGeometry('arm.generic.hand.finger', () => new THREE.CapsuleGeometry(0.0075, 0.05, 3, 6)),
+    [],
+  );
+  const thumbGeometry = useMemo(
+    () => cachedGeometry('arm.generic.hand.thumb', () => new THREE.CapsuleGeometry(0.0085, 0.032, 3, 6)),
     [],
   );
 
-  const handCenterY = -(ARM.upperArmLength + ARM.elbowGap + ARM.forearmLength + ARM.wristGap) - ARM.handLength / 2;
+  const handTopY = -(ARM.upperArmLength + ARM.elbowGap + ARM.forearmLength + ARM.wristGap);
+  const palmCenterY = handTopY - 0.02;
+  const fingerBaseY = handTopY - 0.04;
+  const fingerCenterY = fingerBaseY - 0.025;
+  const handId = `body.upperExtremity.${side}.hand`;
 
   return (
     <group>
@@ -119,11 +132,28 @@ function GenericArm({ side }: { side: Side }) {
         tissue="bone"
         position={[0, forearmCenterY, 0]}
       />
+      {/*
+        Hand: a palm plus five fingers, all sharing one nodeId — same "one
+        selectable subassembly, several meshes" pattern as the detailed left
+        arm's forearm (radius+ulna). The right hand stays a single
+        selectable node in this build (matching its one AnatomyNode entry in
+        upperExtremity.ts), it just isn't a featureless capsule anymore.
+      */}
+      <SelectableMesh nodeId={handId} geometry={palmGeometry} tissue="bone" position={[0, palmCenterY, 0]} />
+      {[-0.021, -0.007, 0.007, 0.021].map((x) => (
+        <SelectableMesh
+          key={x}
+          nodeId={handId}
+          geometry={fingerGeometry}
+          tissue="bone"
+          position={[x * mirror, fingerCenterY, 0]}
+        />
+      ))}
       <SelectableMesh
-        nodeId={`body.upperExtremity.${side}.hand`}
-        geometry={handGeometry}
+        nodeId={handId}
+        geometry={thumbGeometry}
         tissue="bone"
-        position={[0, handCenterY, 0]}
+        position={[0.032 * mirror, fingerBaseY + 0.008, 0.016]}
       />
     </group>
   );

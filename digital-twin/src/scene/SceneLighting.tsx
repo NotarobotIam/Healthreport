@@ -1,10 +1,10 @@
 export function SceneLighting() {
   return (
     <>
-      <ambientLight intensity={0.38} />
+      <ambientLight intensity={0.48} />
       <directionalLight
         position={[2.5, 4, 3]}
-        intensity={1.1}
+        intensity={1.2}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}

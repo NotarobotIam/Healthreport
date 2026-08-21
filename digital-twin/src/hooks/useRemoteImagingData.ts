@@ -1,30 +1,30 @@
 import { useEffect } from 'react';
-import { ensureAuthBootstrapped } from '../auth/handoff';
 import { getStoredToken } from '../auth/tokenStore';
 import { fetchImagingOrganMapping } from '../data/remote/reportsApi';
 import { physiologyEngine } from '../engine/physiologyEngine';
 
 /**
- * Fires once per app load: waits for any URL-based auth handoff to resolve,
- * and — only if that left us with a token — fetches this patient's real
- * Imaging-report organ mapping and merges it into the physiology engine
- * (see physiologyEngine.ts's setRealBodyRegions). No token, or a failed
- * fetch, is a silent no-op: the app already renders correctly on mock data
- * alone, so there's no error state to show here — see App.tsx.
+ * Fires once per app load (only ever mounted once actually authenticated —
+ * see App.tsx's ProtectedShell): fetches this patient's real Imaging-report
+ * organ mapping and merges it into the physiology engine (see
+ * physiologyEngine.ts's setRealBodyRegions). A failed fetch is a silent
+ * no-op: the app already renders correctly on mock data alone, so there's
+ * no error state to show here. The `getStoredToken()` guard stays even
+ * though this hook only ever mounts while authenticated — it still covers
+ * the narrow case of a token expiring mid-session.
  */
 export function useRemoteImagingData(): void {
   useEffect(() => {
+    if (!getStoredToken()) return;
     let cancelled = false;
 
-    ensureAuthBootstrapped().then(async () => {
-      if (cancelled || !getStoredToken()) return;
-      try {
-        const regions = await fetchImagingOrganMapping();
+    fetchImagingOrganMapping()
+      .then((regions) => {
         if (!cancelled) physiologyEngine.getState().setRealBodyRegions(regions);
-      } catch {
+      })
+      .catch(() => {
         // Network/auth failure — stays on mock data.
-      }
-    });
+      });
 
     return () => {
       cancelled = true;

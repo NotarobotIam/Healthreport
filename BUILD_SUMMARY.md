@@ -15,12 +15,13 @@ A complete full-stack health report management system has been built with all th
 - **User Profiles** - Manage personal health information
 - **MongoDB Integration** - Persistent data storage
 
-### Frontend (React)
+### Frontend (React + TypeScript, Vite)
 - **Login/Register Pages** - Beautiful authentication UI
 - **Dashboard** - View and manage all test reports
 - **Data Analysis Page** - Transpose data with table and chart views
 - **Report Details** - View individual reports with edit capability
 - **User Profile** - Manage personal information
+- **4D Digital Twin** - Interactive 3D anatomy & physiology explorer
 - **Navigation** - Sticky header for easy navigation
 - **Responsive Design** - Works on different screen sizes
 
@@ -31,6 +32,7 @@ A complete full-stack health report management system has been built with all th
 ✅ **Data Transpose Feature** - Transform data to compare metrics over time
 ✅ Chart visualization with Recharts
 ✅ Statistics calculation (min, max, average)
+✅ **3D Anatomy & Physiology Explorer** - Report data layered onto an interactive digital twin
 ✅ Doctor-friendly data format
 ✅ Secure data isolation per user
 
@@ -41,8 +43,8 @@ A complete full-stack health report management system has been built with all th
 ### 1. Install Dependencies
 ```bash
 cd /path/to/Healthreport
-npm install          # Backend
-cd client && npm install  # Frontend
+npm install                    # Backend
+cd digital-twin && npm install # Frontend
 cd ..
 ```
 
@@ -71,7 +73,7 @@ npm run seed
 ```bash
 npm run both
 # Backend: http://localhost:5000
-# Frontend: http://localhost:3000
+# Frontend: http://localhost:5183
 ```
 
 ---
@@ -95,21 +97,21 @@ Healthreport/
 │   └── middleware/
 │       └── auth.js           # JWT verification
 │
-├── Frontend (client/)
+├── Frontend (digital-twin/)
 │   ├── src/
-│   │   ├── App.js            # Main router
-│   │   ├── api.js            # API client
+│   │   ├── App.tsx            # Route tree
+│   │   ├── data/remote/       # API client
 │   │   ├── pages/
-│   │   │   ├── Login.js
-│   │   │   ├── Register.js
-│   │   │   ├── Dashboard.js
-│   │   │   ├── TransposeView.js
-│   │   │   ├── ReportDetail.js
-│   │   │   └── Profile.js
-│   │   ├── components/
-│   │   │   └── Navigation.js
-│   │   └── public/
-│   │       └── index.html
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── RegisterPage.tsx
+│   │   │   ├── DashboardPage.tsx
+│   │   │   ├── DataPage.tsx
+│   │   │   ├── ReportDetailPage.tsx
+│   │   │   ├── ProfilePage.tsx
+│   │   │   └── AnatomyPage.tsx   # 3D anatomy/physiology explorer
+│   │   └── components/
+│   │       └── layout/TopNav.tsx
+│   ├── index.html
 │   └── package.json
 │
 └── Documentation
@@ -124,7 +126,7 @@ Healthreport/
 ## 🎯 How to Use the App
 
 ### First Time User
-1. Open http://localhost:3000
+1. Open http://localhost:5183
 2. Click "Register" to create account
 3. Fill in email and password
 4. Click "Register" button
@@ -232,8 +234,8 @@ PUT    /api/users/profile      Update user profile
 npm run dev            # Start backend with auto-reload
 npm run both           # Start both backend and frontend
 
-# Client only
-cd client && npm start # Start React development server
+# Frontend only
+npm run web            # Start Vite development server
 
 # Database
 npm run seed          # Load sample data
@@ -293,11 +295,11 @@ mongosh
 
 ### Frontend Won't Load
 ```bash
-cd client
+cd digital-twin
 npm cache clean --force
 rm -rf node_modules
 npm install
-npm start
+npm run dev
 ```
 
 ### Check Logs
@@ -312,7 +314,7 @@ npm start
 ## 🎨 Customization
 
 ### Change Colors
-Edit `client/src/App.css` and `client/src/pages/*.css`
+Edit `digital-twin/tailwind.config.js` (theme tokens) or component files directly
 
 ### Modify Database Fields
 Edit `models/User.js` or `models/TestReport.js`
@@ -321,18 +323,18 @@ Edit `models/User.js` or `models/TestReport.js`
 Create file in `routes/` folder and import in `server.js`
 
 ### Add New Pages
-Create `.js` and `.css` files in `client/src/pages/`
+Create a `.tsx` file in `digital-twin/src/pages/` and add a `<Route>` in `App.tsx`
 
 ---
 
 ## 🚀 Next Steps
 
-1. **Install dependencies**: `npm install && cd client && npm install`
+1. **Install dependencies**: `npm install && cd digital-twin && npm install`
 2. **Setup MongoDB**: Local or Atlas
 3. **Configure .env**: Set MongoDB URI and JWT secret
 4. **Load sample data**: `npm run seed` (optional)
 5. **Start app**: `npm run both`
-6. **Open browser**: http://localhost:3000
+6. **Open browser**: http://localhost:5183
 7. **Login**: john@example.com / password123 (if seeded)
 
 ---
@@ -399,13 +401,13 @@ Your health report dashboard is ready to build. Start with:
 
 ```bash
 npm install
-cd client && npm install
+cd digital-twin && npm install
 cd ..
 npm run seed    # (optional - loads sample data)
 npm run both
 ```
 
-Then open **http://localhost:3000** in your browser!
+Then open **http://localhost:5183** in your browser!
 
 **Happy coding!** 🚀
 

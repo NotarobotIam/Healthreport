@@ -45,7 +45,7 @@ export function BottomBar() {
           step={0.05}
           value={currentTime % SCRUB_WINDOW_SECONDS}
           onChange={(e) => scrubTo(Number(e.target.value))}
-          className="h-1 flex-1 cursor-pointer accent-[#3ee6e0]"
+          className="h-1 flex-1 cursor-pointer accent-[#3498db]"
         />
         <span className="w-20 font-mono text-hud-text">{formatTime(currentTime)}</span>
       </div>

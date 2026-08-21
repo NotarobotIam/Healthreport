@@ -1,5 +1,42 @@
-import { apiGet, apiPost } from './apiClient';
-import type { BodyRegionState, ReportsResponse, TransposeResponse } from '../../types';
+import { apiGet, apiPost, apiPut, apiDelete } from './apiClient';
+import type { BodyRegionState, ReportDTO, ReportsResponse, TransposeResponse } from '../../types';
+
+export interface ReportResponse {
+  success: boolean;
+  report: ReportDTO;
+}
+
+export interface CreateReportPayload {
+  testName: string;
+  testDate: string;
+  testType: string;
+  results: Record<string, unknown>;
+  notes?: string;
+  normal?: boolean;
+}
+
+export type UpdateReportPayload = Partial<CreateReportPayload>;
+
+/** All reports for the current user, optionally scoped to one testType (e.g. `?testType=Blood`). */
+export function fetchReports(testType?: string): Promise<ReportsResponse> {
+  return apiGet<ReportsResponse>(testType ? `/reports?testType=${encodeURIComponent(testType)}` : '/reports');
+}
+
+export function fetchReport(id: string): Promise<ReportResponse> {
+  return apiGet<ReportResponse>(`/reports/${id}`);
+}
+
+export function createReport(payload: CreateReportPayload): Promise<ReportResponse> {
+  return apiPost<ReportResponse>('/reports', payload);
+}
+
+export function updateReport(id: string, payload: UpdateReportPayload): Promise<ReportResponse> {
+  return apiPut<ReportResponse>(`/reports/${id}`, payload);
+}
+
+export function deleteReport(id: string): Promise<{ success: boolean; message: string }> {
+  return apiDelete<{ success: boolean; message: string }>(`/reports/${id}`);
+}
 
 /**
  * Fetches every Imaging-type report for the current user and folds their

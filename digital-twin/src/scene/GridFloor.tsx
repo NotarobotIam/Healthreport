@@ -8,10 +8,10 @@ export function GridFloor() {
       args={[10, 10]}
       cellSize={0.25}
       cellThickness={0.5}
-      cellColor="#16232e"
+      cellColor="#22384a"
       sectionSize={1}
       sectionThickness={1}
-      sectionColor="#1c2a38"
+      sectionColor="#2f5871"
       fadeDistance={9}
       fadeStrength={1}
       infiniteGrid
