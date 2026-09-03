@@ -59,10 +59,18 @@ export function generatePhysiologyFrame(time: number): PhysiologyFrame {
       heart: { perfusion: 0.6 + contraction * 0.4, flow: contraction, state: 'normal' },
       lungLeft: { perfusion: 0.7 + breath * 0.2, flow: breath, state: 'normal' },
       lungRight: { perfusion: 0.7 + breath * 0.2, flow: breath, state: 'normal' },
-      'eye.left.iop': { pressure: 15.5, state: 'normal' }, // mock mmHg, static placeholder
-      'eye.left.retina': { perfusion: 0.55 + contraction * 0.15, flow: contraction, state: 'normal' },
-      'eye.left.retinalFlow': { flow: contraction, perfusion: 0.55 + contraction * 0.15, state: 'normal' },
-      'eye.left.opticNerve': { perfusion: 0.5 + contraction * 0.1, state: 'normal' },
+      // Both eyes, since both are now fully modelled. Values are identical
+      // per side by design: this is the MOCK stream, and inventing a
+      // left/right difference would read as a real clinical asymmetry.
+      // Real per-eye data arrives via realBodyRegions and overrides these.
+      ...Object.fromEntries(
+        (['left', 'right'] as const).flatMap((side) => [
+          [`eye.${side}.iop`, { pressure: 15.5, state: 'normal' }], // mock mmHg, static placeholder
+          [`eye.${side}.retina`, { perfusion: 0.55 + contraction * 0.15, flow: contraction, state: 'normal' }],
+          [`eye.${side}.retinalFlow`, { flow: contraction, perfusion: 0.55 + contraction * 0.15, state: 'normal' }],
+          [`eye.${side}.opticNerve`, { perfusion: 0.5 + contraction * 0.1, state: 'normal' }],
+        ]),
+      ),
     },
   };
 }

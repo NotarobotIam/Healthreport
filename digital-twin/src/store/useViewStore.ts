@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AnatomySystem, CardiovascularSubfilters, NervousSubfilters, ViewMode } from '../types';
+import type { BodySex } from '../constants/bodyLayout';
 
 export const ALL_SYSTEMS: AnatomySystem[] = [
   'skeletal',
@@ -67,6 +68,14 @@ function presetForViewMode(mode: ViewMode): ViewModePreset {
 }
 
 interface ViewStoreState {
+  /**
+   * Which anatomical model to render. Deliberately NOT cleared by
+   * resetView(): the other fields here are view filters the user toggles
+   * while exploring, but the sex of the model is a property of the patient
+   * being examined — silently flipping it on "Reset View" would be wrong.
+   */
+  anatomySex: BodySex;
+  setAnatomySex: (sex: BodySex) => void;
   visibleSystems: Record<AnatomySystem, boolean>;
   cardiovascularSubfilters: CardiovascularSubfilters;
   nervousSubfilters: NervousSubfilters;
@@ -82,6 +91,8 @@ interface ViewStoreState {
 }
 
 export const useViewStore = create<ViewStoreState>((set) => ({
+  anatomySex: 'male',
+  setAnatomySex: (sex) => set({ anatomySex: sex }),
   visibleSystems: allSystemsVisible(),
   cardiovascularSubfilters: { arteries: true, veins: true, microvasculature: true },
   nervousSubfilters: { central: true, peripheral: true },

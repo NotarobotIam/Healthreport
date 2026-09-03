@@ -52,6 +52,13 @@ export function SelectableMesh({ nodeId, geometry, tissue, position, rotation, s
     return true;
   });
 
+  // A node belonging to the other anatomy must never render, even if a
+  // component asks for it — this is the backstop behind the per-component
+  // `sex === 'female' && ...` guards, so one missed guard cannot put a
+  // prostate inside the female figure.
+  const anatomySex = useViewStore((s) => s.anatomySex);
+  const sexVisible = (anatomyMap[nodeId]?.sexSpecific ?? anatomySex) === anatomySex;
+
   const material = useMemo(() => getSharedMaterial(tissue).clone(), [tissue]);
   useEffect(() => () => material.dispose(), [material]);
 
@@ -63,7 +70,17 @@ export function SelectableMesh({ nodeId, geometry, tissue, position, rotation, s
   }, [nodeId]);
 
   useLayoutEffect(() => {
-    const isOuterShell = OUTER_SHELL_NODE_IDS.has(nodeId) || (anatomyMap[nodeId]?.systemTags.includes('integumentary') ?? false);
+    // `skinScan` IS the outer-shell tissue, so it drives this directly.
+    // Deriving "is this skin?" from the node's systemTags alone was wrong
+    // once limbs gained a skin layer: nodes like `...left.thigh` are tagged
+    // 'muscular'/'skeletal' (they own bone and muscle meshes too), so their
+    // skin rendered fully OPAQUE and hid the femur, tibia, and limb muscles
+    // inside it. The node-id/tag checks stay as-is for the eye's outer
+    // shells, which are not skinScan.
+    const isOuterShell =
+      tissue === 'skinScan' ||
+      OUTER_SHELL_NODE_IDS.has(nodeId) ||
+      (anatomyMap[nodeId]?.systemTags.includes('integumentary') ?? false);
     const baseOpacity = isOuterShell ? outerShellOpacity(transparency) : 1;
     const finalOpacity = Math.max(0.02, baseOpacity * emphasis);
 
@@ -81,9 +98,9 @@ export function SelectableMesh({ nodeId, geometry, tissue, position, rotation, s
     } else {
       material.emissiveIntensity = 0;
     }
-  }, [material, isHovered, isSelected, emphasis, transparency, nodeId]);
+  }, [material, isHovered, isSelected, emphasis, transparency, nodeId, tissue]);
 
-  if (!systemVisible || !subfilterVisible) return null;
+  if (!systemVisible || !subfilterVisible || !sexVisible) return null;
 
   return (
     <mesh

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SelectableMesh } from '../primitives/SelectableMesh';
 import { cachedGeometry } from '../primitives/proceduralGeometry';
+import { buildProfiledForm } from '../primitives/anatomicalForms';
 import type { Side } from '../../constants/bodyLayout';
 
 interface FingerProps {
@@ -12,17 +13,23 @@ interface FingerProps {
   hasMiddle: boolean;
 }
 
-const RADIUS = 0.0068;
+const RADIUS = 0.0058;
 const PROXIMAL_LEN = 0.044;
 const MIDDLE_LEN = 0.027;
 const DISTAL_LEN = 0.021;
 const JOINT_GAP = 0.005;
 
 /**
- * One finger of the flagship left-hand drill-down: proximal/(middle)/distal
- * phalanges plus a single "Joints" marker, each its own SelectableMesh so
- * hovering/selecting one bone never lights up its neighbors — including the
- * neighboring FINGER, since geometry cache keys and node ids are per-finger.
+ * One finger: a translucent skin sheath over its phalanges, rather than
+ * bare bones floating in space. The sheath is a single tapered form running
+ * the whole finger with slight swells at the knuckles — fingers read as
+ * continuous soft tissue, not as a chain of separate segments, even though
+ * the bones inside stay individually selectable.
+ *
+ * The sheath carries the FINGER's node id while the bones inside carry
+ * their own phalanx ids, so hovering the finger selects the finger, and
+ * drilling into it exposes the individual bones underneath — the same
+ * layering the limbs use.
  */
 export function Finger({ side, fingerKey, basePosition, hasMiddle }: FingerProps) {
   const base = `body.upperExtremity.${side}.hand.${fingerKey}`;
@@ -53,9 +60,35 @@ export function Finger({ side, fingerKey, basePosition, hasMiddle }: FingerProps
   const afterMiddleY = hasMiddle ? afterProximalY - MIDDLE_LEN - JOINT_GAP : afterProximalY;
 
   const distalCenterY = afterMiddleY - DISTAL_LEN / 2;
+  const tipY = afterMiddleY - DISTAL_LEN;
+
+  // One sheath geometry per finger LENGTH class (with vs. without a middle
+  // phalanx), not per finger — four fingers share a single cached geometry.
+  const skinGeometry = useMemo(
+    () =>
+      cachedGeometry(`finger.skin.${hasMiddle ? 'long' : 'short'}`, () =>
+        buildProfiledForm({
+          topY: 0,
+          bottomY: tipY - mcpY - 0.004,
+          profile: [
+            { t: 0, rx: 0.0092, rz: 0.0085 }, // knuckle
+            { t: 0.22, rx: 0.0086, rz: 0.008 },
+            { t: 0.46, rx: 0.0082, rz: 0.0076 }, // PIP joint swell
+            { t: 0.7, rx: 0.0075, rz: 0.007 },
+            { t: 0.88, rx: 0.0069, rz: 0.0064 },
+            { t: 1, rx: 0.0042, rz: 0.0039 }, // fingertip
+          ],
+          radialSegments: 14,
+          slices: 16,
+        }),
+      ),
+    [hasMiddle, tipY, mcpY],
+  );
 
   return (
     <group>
+      <SelectableMesh nodeId={base} geometry={skinGeometry} tissue="skinScan" position={[bx, mcpY, bz]} />
+
       <SelectableMesh
         nodeId={`${base}.proximalPhalanx`}
         geometry={proximalGeometry}

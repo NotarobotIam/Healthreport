@@ -7,21 +7,23 @@ import { anatomyMap, ancestryMap } from '../../data/anatomy';
 import { getSystemColor } from '../../utils/color';
 import { Toggle, Slider, SectionLabel, IconButton } from '../common';
 import type { ViewMode } from '../../types';
+import type { BodySex } from '../../constants/bodyLayout';
 import { ROOT_NODE_ID } from '../../types';
 
-function useSearchMatches(query: string): Set<string> | null {
+function useSearchMatches(query: string, anatomySex: BodySex): Set<string> | null {
   return useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return null;
     const matches = new Set<string>();
     for (const node of Object.values(anatomyMap)) {
+      if (node.sexSpecific && node.sexSpecific !== anatomySex) continue;
       if (node.name.toLowerCase().includes(trimmed)) {
         matches.add(node.id);
         for (const ancestorId of ancestryMap.get(node.id) ?? []) matches.add(ancestorId);
       }
     }
     return matches;
-  }, [query]);
+  }, [query, anatomySex]);
 }
 
 function TreeNode({ nodeId, depth, searchMatches }: { nodeId: string; depth: number; searchMatches: Set<string> | null }) {
@@ -32,8 +34,13 @@ function TreeNode({ nodeId, depth, searchMatches }: { nodeId: string; depth: num
   const toggleExpanded = useAnatomyStore((s) => s.toggleExpanded);
   const selectNode = useAnatomyStore((s) => s.selectNode);
   const hoverNode = useAnatomyStore((s) => s.hoverNode);
+  const anatomySex = useViewStore((s) => s.anatomySex);
 
   if (!node) return null;
+  // Structures belonging to the other anatomy are hidden from the tree
+  // entirely, rather than shown greyed out: a doctor reading a female
+  // patient's twin should not see a prostate listed at all.
+  if (node.sexSpecific && node.sexSpecific !== anatomySex) return null;
   if (searchMatches && !searchMatches.has(nodeId)) return null;
 
   const isSelected = selectedNodeId === nodeId;
@@ -99,6 +106,32 @@ const VIEW_MODES: { id: ViewMode; label: string }[] = [
   { id: 'vessels', label: 'Vessels' },
   { id: 'nerves', label: 'Nerves' },
 ];
+
+/**
+ * The male/female switch. Placed above the imaging modes because it changes
+ * WHICH BODY is being examined, rather than how the current one is drawn —
+ * it belongs with the patient, not with the view filters (which is also why
+ * "Reset View" deliberately leaves it alone; see store/useViewStore.ts).
+ */
+function AnatomyModelToggle() {
+  const anatomySex = useViewStore((s) => s.anatomySex);
+  const setAnatomySex = useViewStore((s) => s.setAnatomySex);
+
+  return (
+    <div>
+      <SectionLabel>Anatomy Model</SectionLabel>
+      <div className="grid grid-cols-2 gap-1.5 px-2">
+        <IconButton label="Male" active={anatomySex === 'male'} onClick={() => setAnatomySex('male')} />
+        <IconButton label="Female" active={anatomySex === 'female'} onClick={() => setAnatomySex('female')} />
+      </div>
+      <p className="px-2 pt-1.5 text-[10px] leading-snug text-hud-muted">
+        {anatomySex === 'female'
+          ? 'Female anatomy — includes breast tissue, uterus, and ovaries.'
+          : 'Male anatomy — includes the prostate.'}
+      </p>
+    </div>
+  );
+}
 
 function ViewControls() {
   const viewMode = useViewStore((s) => s.viewMode);
@@ -207,7 +240,8 @@ function TimeMiniControls() {
 
 export function LeftPanel() {
   const [search, setSearch] = useState('');
-  const searchMatches = useSearchMatches(search);
+  const anatomySex = useViewStore((s) => s.anatomySex);
+  const searchMatches = useSearchMatches(search, anatomySex);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -225,6 +259,7 @@ export function LeftPanel() {
         </div>
       </div>
 
+      <AnatomyModelToggle />
       <ViewControls />
       <SystemFilters />
       <TimeMiniControls />

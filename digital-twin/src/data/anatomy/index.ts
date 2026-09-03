@@ -5,6 +5,7 @@ import { upperExtremityNodes } from './upperExtremity';
 import { lowerExtremityNodes } from './lowerExtremity';
 import { eyeNodes } from './eye';
 import { torsoOrgansNodes } from './torsoOrgans';
+import { bodySystemsNodes } from './bodySystems';
 
 const ALL_NODES: AnatomyNode[] = [
   ...rootNodes,
@@ -12,6 +13,7 @@ const ALL_NODES: AnatomyNode[] = [
   ...lowerExtremityNodes,
   ...eyeNodes,
   ...torsoOrgansNodes,
+  ...bodySystemsNodes,
 ];
 
 /**

@@ -1,10 +1,19 @@
-// The eye is the other flagship demonstration (alongside the left arm/hand/
+// The eye is the other flagship demonstration (alongside the arms/hands/
 // fingers): Head -> Orbit -> Eye -> Eyeball -> cornea/sclera/iris/pupil/
 // lens/ciliary body/vitreous humor/retina(->macula/optic disc/retinal
 // vessels)/optic nerve, plus extraocular muscles/eyelids/lacrimal apparatus
-// as siblings of the eyeball. The LEFT eye gets this full treatment; the
-// RIGHT eye is a single generic placeholder sphere (see buildSimpleEye) —
-// same flagship/generic split rationale as the arms.
+// as siblings of the eyeball.
+//
+// BOTH eyes get this full treatment, from one builder. An earlier version
+// detailed only the left eye and left the right one as a placeholder
+// sphere; a patient with one anatomically-modelled eye and one blank ball
+// reads as a modelling error, and it makes any right-eye finding
+// (retinopathy, raised IOP, optic-disc change) impossible to attach.
+// Mirroring is handled entirely by the renderer — the scene mirrors the eye
+// group on X (see scene/eye/Eye.tsx) — so nasal/temporal structures like
+// the optic disc, macula, and lacrimal gland land on the correct side of
+// each eye without this file, or any of the eye components, needing a
+// second set of hand-mirrored coordinates.
 import type { AnatomyNode, CameraTarget } from '../../types';
 import type { Side } from '../../constants/bodyLayout';
 import { EYE, orbitPosition } from '../../constants/bodyLayout';
@@ -33,7 +42,7 @@ function insideGlobeShot(center: [number, number, number]): CameraTarget {
   };
 }
 
-function buildDetailedEye(side: Side): AnatomyNode[] {
+function buildEye(side: Side): AnatomyNode[] {
   const label = `${SIDE_LABEL[side]} Eye`;
   const center = orbitPosition(side);
   const yaw = side === 'left' ? -0.18 : 0.18;
@@ -246,52 +255,7 @@ function buildDetailedEye(side: Side): AnatomyNode[] {
   ];
 }
 
-function buildSimpleEye(side: Side): AnatomyNode[] {
-  const label = `${SIDE_LABEL[side]} Eye`;
-  const center = orbitPosition(side);
-  const yaw = side === 'left' ? -0.18 : 0.18;
-  const orbitId = `body.head.orbit.${side}`;
-  const eyeId = `${orbitId}.eye`;
-  const eyeballId = `${eyeId}.eyeball`;
-
-  return [
-    {
-      id: orbitId,
-      name: 'Orbit',
-      parentId: 'body.head',
-      children: [],
-      meshIds: [],
-      systemTags: ['skeletal'],
-      selectable: true,
-      cameraTarget: frameShot(center, 0.075, { yaw, pitch: 0.1 }),
-      description: `Bony eye socket housing the ${label.toLowerCase()}.`,
-    },
-    {
-      id: eyeId,
-      name: label,
-      parentId: orbitId,
-      children: [],
-      meshIds: [],
-      systemTags: [],
-      selectable: true,
-      cameraTarget: frameShot(center, 0.052, { yaw, pitch: 0.06 }),
-      description: `${label}. Shown in simplified form in this build — the left eye has the fully detailed internal drill-down.`,
-    },
-    {
-      id: eyeballId,
-      name: 'Eyeball',
-      parentId: eyeId,
-      children: [],
-      meshIds: [eyeballId],
-      systemTags: [],
-      selectable: true,
-      cameraTarget: frameShot(center, EYE.radius * 3.4, { yaw, pitch: 0.05 }),
-      description: 'The globe of the eye, shown as a single structure in this build.',
-    },
-  ];
-}
-
-export const eyeNodes: AnatomyNode[] = [...buildDetailedEye('left'), ...buildSimpleEye('right')];
+export const eyeNodes: AnatomyNode[] = [...buildEye('left'), ...buildEye('right')];
 
 /**
  * Nodes that respond to the global transparency slider ("cutaway mode") in
@@ -300,9 +264,10 @@ export const eyeNodes: AnatomyNode[] = [...buildDetailedEye('left'), ...buildSim
  * eye branch rather than a field on AnatomyNode itself — see
  * scene/primitives/SelectableMesh.tsx, the one place this is read.
  */
-export const OUTER_SHELL_NODE_IDS = new Set<string>([
-  'body.head.orbit.left.eye.eyeball.cornea',
-  'body.head.orbit.left.eye.eyeball.sclera',
-  'body.head.orbit.left.eye.eyeball.iris',
-  'body.head.orbit.right.eye.eyeball',
-]);
+export const OUTER_SHELL_NODE_IDS = new Set<string>(
+  (['left', 'right'] as const).flatMap((side) => [
+    `body.head.orbit.${side}.eye.eyeball.cornea`,
+    `body.head.orbit.${side}.eye.eyeball.sclera`,
+    `body.head.orbit.${side}.eye.eyeball.iris`,
+  ]),
+);

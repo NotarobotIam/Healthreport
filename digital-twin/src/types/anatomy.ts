@@ -50,6 +50,13 @@ export interface AnatomyNode {
   description?: string;
   /** Optional key into PhysiologyFrame.bodyRegions for the right-panel physiology placeholder. */
   physiologyKey?: string;
+  /**
+   * Present only in one anatomy (uterus, ovaries, prostate, breasts).
+   * Undefined means the node is common to both. Nodes for the other sex
+   * stay in the map but are filtered out of the tree and never rendered —
+   * see components/layout/LeftPanel.tsx and primitives/SelectableMesh.tsx.
+   */
+  sexSpecific?: 'male' | 'female';
 }
 
 export type AnatomyMap = Record<string, AnatomyNode>;

@@ -17,6 +17,12 @@ const ROUGHNESS: Partial<Record<TissueKind, number>> = {
   muscle: 0.62,
   skinScan: 0.3,
   organGeneric: 0.58,
+  liver: 0.6,
+  stomach: 0.52,
+  intestine: 0.55,
+  kidney: 0.55,
+  cartilage: 0.4,
+  fat: 0.7,
   heart: 0.42,
   lungs: 0.5,
   brain: 0.5,
@@ -46,10 +52,19 @@ export function getSharedMaterial(kind: TissueKind): THREE.MeshStandardMaterial 
   const roughness = ROUGHNESS[kind] ?? 0.5;
   const emissive = new THREE.Color('#000000');
 
+  // Limbs are mirrored left/right with a negative scale on the arm/leg
+  // group (see scene/body/Arm.tsx), which inverts triangle winding — under
+  // default front-face culling the right-side limbs would render
+  // inside-out. Double-siding every tissue is the simplest correct fix and
+  // costs nothing on closed body geometry, where backfaces are hidden by
+  // depth regardless.
+  const side = THREE.DoubleSide;
+
   const material = TRANSMISSIVE_KINDS.has(kind)
     ? new THREE.MeshPhysicalMaterial({
         color,
         roughness,
+        side,
         metalness: 0,
         transmission: 0.85,
         thickness: 0.02,
@@ -60,6 +75,7 @@ export function getSharedMaterial(kind: TissueKind): THREE.MeshStandardMaterial 
     : new THREE.MeshStandardMaterial({
         color,
         roughness,
+        side,
         metalness: 0.05,
         emissive,
         emissiveIntensity: 0,

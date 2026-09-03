@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import type { BodySex } from '../../constants/bodyLayout';
 
 const geometryCache = new Map<string, THREE.BufferGeometry>();
 
@@ -10,6 +11,23 @@ export function cachedGeometry(key: string, build: () => THREE.BufferGeometry): 
   const geometry = build();
   geometryCache.set(key, geometry);
   return geometry;
+}
+
+/**
+ * Same memoization, namespaced by anatomy sex.
+ *
+ * Use this — never bare `cachedGeometry` — for any geometry whose shape
+ * depends on the selected sex. The cache is global and keyed by string, so
+ * a shared key would hand the female figure geometry built for the male one
+ * (and vice versa) the first time the model is switched, with no error
+ * anywhere: the wrong body would simply render.
+ */
+export function sexedGeometry(
+  sex: BodySex,
+  key: string,
+  build: () => THREE.BufferGeometry,
+): THREE.BufferGeometry {
+  return cachedGeometry(`${sex}:${key}`, build);
 }
 
 /**

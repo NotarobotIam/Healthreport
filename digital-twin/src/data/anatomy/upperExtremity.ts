@@ -1,12 +1,14 @@
-// Upper extremities. The LEFT arm is the flagship drill-down (full
-// shoulder->hand->finger->phalanx/joint detail, per the product spec's
-// "Left Arm -> Hand -> Fingers" demonstration). The RIGHT arm is a
-// deliberately generic mirror (see buildGenericArm) so the whole body stays
-// navigable without doubling the authoring/geometry effort — this contrast
-// is intentional, not an oversight (see the build plan's "trims" section).
+// Upper extremities. BOTH arms carry the full
+// shoulder->hand->finger->phalanx/joint drill-down (the product spec calls
+// out "Left Arm -> Hand -> Fingers" specifically, but a body with one
+// detailed hand and one simplified stump reads as a modelling error, not as
+// a scoping decision). One builder generates both sides from identical
+// data, mirroring only the camera yaw, so the two arms cannot drift apart —
+// the renderer mirrors the geometry the same way, via a single scale-x on
+// the arm group (see scene/body/Arm.tsx).
 import type { AnatomyNode, AnatomySystem } from '../../types';
 import type { Side } from '../../constants/bodyLayout';
-import { armPointWorld } from '../../constants/bodyLayout';
+import { SIDE_SIGN, armPointWorld } from '../../constants/bodyLayout';
 import { frameShot } from '../../utils/math';
 
 const SIDE_LABEL: Record<Side, string> = { left: 'Left', right: 'Right' };
@@ -40,7 +42,7 @@ interface FingerSpec {
   tipDownDistance: number;
 }
 
-const LEFT_FINGERS: FingerSpec[] = [
+const FINGERS: FingerSpec[] = [
   { key: 'thumb', name: 'Thumb', hasMiddle: false, tipDownDistance: 0.67 },
   { key: 'index', name: 'Index Finger', hasMiddle: true, tipDownDistance: 0.735 },
   { key: 'middle', name: 'Middle Finger', hasMiddle: true, tipDownDistance: 0.75 },
@@ -114,8 +116,12 @@ function buildFingerDetailed(side: Side, spec: FingerSpec): AnatomyNode[] {
   return [fingerNode, ...out];
 }
 
-function buildDetailedLeftArm(): AnatomyNode[] {
-  const side: Side = 'left';
+function buildDetailedArm(side: Side): AnatomyNode[] {
+  const label = `${SIDE_LABEL[side]} Arm`;
+  const sideWord = SIDE_LABEL[side].toLowerCase();
+  // Camera framing is the ONE thing that differs between sides: each arm is
+  // shot from its own outboard side, so the yaw mirrors with the limb.
+  const yaw = SIDE_SIGN[side];
   const armId = `body.upperExtremity.${side}`;
   const shoulderId = `${armId}.shoulder`;
   const upperArmId = `${armId}.upperArm`;
@@ -130,14 +136,14 @@ function buildDetailedLeftArm(): AnatomyNode[] {
   const nodes: AnatomyNode[] = [
     {
       id: armId,
-      name: 'Left Arm',
+      name: label,
       parentId: 'body.upperExtremity',
       children: [],
       meshIds: [],
       systemTags: [],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.42), 0.95, { yaw: -0.35, pitch: 0.08 }),
-      description: 'Left upper limb. The flagship drill-down of this build: shoulder through fingertip.',
+      cameraTarget: frameShot(armPointWorld(side, 0.42), 0.95, { yaw: -0.35 * yaw, pitch: 0.08 }),
+      description: `${sideWord.charAt(0).toUpperCase()}${sideWord.slice(1)} upper limb, navigable from shoulder through fingertip.`,
     },
     {
       id: shoulderId,
@@ -147,7 +153,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [shoulderId],
       systemTags: ['skeletal', 'muscular'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0), 0.32, { yaw: -0.3 }),
+      cameraTarget: frameShot(armPointWorld(side, 0), 0.32, { yaw: -0.3 * yaw }),
       description: 'Glenohumeral joint and deltoid region connecting the arm to the torso.',
     },
     {
@@ -158,7 +164,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [upperArmId],
       systemTags: ['skeletal'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.32, { yaw: -0.3 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.32, { yaw: -0.3 * yaw }),
       description: 'Humerus, from shoulder to elbow.',
     },
     {
@@ -169,7 +175,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [bicepsId],
       systemTags: ['muscular'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.26, { yaw: -0.2 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.26, { yaw: -0.2 * yaw }),
       description: 'Biceps brachii, anterior compartment of the upper arm.',
     },
     {
@@ -180,7 +186,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [tricepsId],
       systemTags: ['muscular'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.26, { yaw: -0.55 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.14), 0.26, { yaw: -0.55 * yaw }),
       description: 'Triceps brachii, posterior compartment of the upper arm.',
     },
     {
@@ -191,7 +197,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [elbowId],
       systemTags: ['skeletal'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.28), 0.22, { yaw: -0.3 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.28), 0.22, { yaw: -0.3 * yaw }),
       description: 'Elbow joint, connecting the humerus to the radius and ulna.',
     },
     {
@@ -205,7 +211,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [`${forearmId}.radius`, `${forearmId}.ulna`],
       systemTags: ['skeletal'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.4), 0.26, { yaw: -0.3 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.4), 0.26, { yaw: -0.3 * yaw }),
       description: 'Radius and ulna, from elbow to wrist.',
     },
     {
@@ -216,7 +222,7 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [wristId],
       systemTags: ['skeletal'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.53), 0.18, { yaw: -0.3 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.53), 0.18, { yaw: -0.3 * yaw }),
       description: 'Carpal region connecting the forearm to the hand.',
     },
     {
@@ -227,8 +233,8 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [],
       systemTags: ['skeletal'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.66), 0.28, { yaw: -0.3, pitch: 0.2 }),
-      description: 'Left hand. Select the palm or an individual finger to continue drilling down.',
+      cameraTarget: frameShot(armPointWorld(side, 0.66), 0.28, { yaw: -0.3 * yaw, pitch: 0.2 }),
+      description: `${SIDE_LABEL[side]} hand. Select the palm or an individual finger to continue drilling down.`,
     },
     {
       id: palmId,
@@ -238,79 +244,16 @@ function buildDetailedLeftArm(): AnatomyNode[] {
       meshIds: [palmId],
       systemTags: ['skeletal', 'muscular'],
       selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.63), 0.16, { yaw: -0.3, pitch: 0.2 }),
+      cameraTarget: frameShot(armPointWorld(side, 0.63), 0.16, { yaw: -0.3 * yaw, pitch: 0.2 }),
       description: 'Metacarpal region of the hand, between the wrist and the fingers.',
     },
   ];
 
-  for (const spec of LEFT_FINGERS) {
+  for (const spec of FINGERS) {
     nodes.push(...buildFingerDetailed(side, spec));
   }
 
   return nodes;
-}
-
-function buildGenericArm(side: Side): AnatomyNode[] {
-  const label = `${SIDE_LABEL[side]} Arm`;
-  const armId = `body.upperExtremity.${side}`;
-  const shoulderId = `${armId}.shoulder`;
-  const upperArmId = `${armId}.upperArm`;
-  const forearmId = `${armId}.forearm`;
-  const handId = `${armId}.hand`;
-
-  return [
-    {
-      id: armId,
-      name: label,
-      parentId: 'body.upperExtremity',
-      children: [],
-      meshIds: [],
-      systemTags: [],
-      selectable: true,
-      cameraTarget: frameShot(armPointWorld(side, 0.42), 0.95, { yaw: 0.35, pitch: 0.08 }),
-      description: `${label}. Shown in simplified form in this build — the left arm has the fully detailed shoulder-to-fingertip drill-down.`,
-    },
-    {
-      id: shoulderId,
-      name: 'Shoulder',
-      parentId: armId,
-      children: [],
-      meshIds: [shoulderId],
-      systemTags: ['skeletal', 'muscular'],
-      selectable: true,
-      description: `${label} shoulder (deltoid / glenohumeral region).`,
-    },
-    {
-      id: upperArmId,
-      name: 'Upper Arm',
-      parentId: armId,
-      children: [],
-      meshIds: [upperArmId],
-      systemTags: ['muscular'],
-      selectable: true,
-      description: `${label} upper arm (humerus and surrounding muscle).`,
-    },
-    {
-      id: forearmId,
-      name: 'Forearm',
-      parentId: armId,
-      children: [],
-      meshIds: [forearmId],
-      systemTags: ['skeletal'],
-      selectable: true,
-      description: `${label} forearm (radius and ulna).`,
-    },
-    {
-      id: handId,
-      name: 'Hand',
-      parentId: armId,
-      children: [],
-      meshIds: [handId],
-      systemTags: ['skeletal'],
-      selectable: true,
-      description: `${label} hand, shown as a single structure in this build.`,
-    },
-  ];
 }
 
 export const upperExtremityNodes: AnatomyNode[] = [
@@ -329,6 +272,6 @@ export const upperExtremityNodes: AnatomyNode[] = [
     cameraTarget: frameShot([0, 1.2, 0], 1.6, { pitch: 0.08 }),
     description: 'Both arms, from shoulder to fingertips.',
   },
-  ...buildDetailedLeftArm(),
-  ...buildGenericArm('right'),
+  ...buildDetailedArm('left'),
+  ...buildDetailedArm('right'),
 ];

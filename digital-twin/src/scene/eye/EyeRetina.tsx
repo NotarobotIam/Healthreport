@@ -7,9 +7,10 @@ import type { Side } from '../../constants/bodyLayout';
 
 const R = EYE.radius;
 // Macula is temporal (away from the nose); optic disc is nasal (toward the
-// nose) — for the left eye, "nasal" is the -X direction relative to that
-// eye's own center (the right eye is a simple placeholder in this build,
-// see data/anatomy/eye.ts, so this asymmetry is only meaningful for 'left').
+// nose). These coordinates are authored for ONE eye — -X is nasal here —
+// and the parent group mirrors them for the other side (see Eye.tsx), so
+// both eyes get their disc toward the nose and macula toward the temple
+// without a second set of coordinates.
 const MACULA_LOCAL: [number, number, number] = [0.0016, -0.0005, -R * 0.975];
 const OPTIC_DISC_LOCAL: [number, number, number] = [-0.0019, 0.0008, -R * 0.975];
 

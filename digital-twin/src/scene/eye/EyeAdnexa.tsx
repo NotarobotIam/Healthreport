@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SelectableMesh } from '../primitives/SelectableMesh';
 import { cachedGeometry, buildPartialSphereGeometry } from '../primitives/proceduralGeometry';
-import { EYE, SIDE_SIGN } from '../../constants/bodyLayout';
+import { EYE } from '../../constants/bodyLayout';
 import type { Side } from '../../constants/bodyLayout';
 
 const R = EYE.radius;
@@ -63,7 +63,11 @@ export function EyeAdnexa({ side }: { side: Side }) {
         nodeId={`${eyeBase}.lacrimalApparatus`}
         geometry={lacrimalGeometry}
         tissue="lacrimal"
-        position={[SIDE_SIGN[side] * R * 1.3, R * 1.05, -R * 0.25]}
+        // Superolateral (temporal) in the orbit. Written for one eye only:
+        // the parent group's scale-x mirrors it for the other side, so
+        // applying SIDE_SIGN here as well would cancel that out and put the
+        // gland against the nose.
+        position={[R * 1.3, R * 1.05, -R * 0.25]}
       />
     </>
   );

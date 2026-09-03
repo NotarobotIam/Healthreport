@@ -9,6 +9,18 @@
 
 export type Side = 'left' | 'right';
 
+/**
+ * Which anatomical model is being shown. Note what this does NOT change:
+ * every joint position in this file is identical for both sexes. Skeletal
+ * landmarks are the reference frame that anatomy node ids, hand-authored
+ * camera targets, and the physiology engine are all defined against, so
+ * moving them per-sex would silently invalidate all three. What varies is
+ * the SOFT TISSUE draped over that frame (constants/bodyProfile.ts) plus
+ * the sex-specific organs — which is where the visible difference lives
+ * anyway. See bodyProfile.ts for the per-sex proportions.
+ */
+export type BodySex = 'male' | 'female';
+
 export const SIDE_SIGN: Record<Side, 1 | -1> = { left: 1, right: -1 };
 
 export const BODY = {
@@ -80,6 +92,13 @@ export function legPointWorld(side: Side, downDistance: number): [number, number
   return [hx, hy - downDistance, hz];
 }
 
+/**
+ * Centre of the eyeball within its orbit. Sits a little deeper than the
+ * face surface because the orbits are now sculpted as actual recessed
+ * sockets (see scene/primitives/headForms.ts) — at the old depth the globe
+ * would break back out through the front of the socket. Eye camera targets
+ * are all derived from this same function, so they follow automatically.
+ */
 export function orbitPosition(side: Side): [number, number, number] {
-  return [SIDE_SIGN[side] * 0.035, BODY.headCenterY - 0.006, BODY.headRadius * 0.9];
+  return [SIDE_SIGN[side] * 0.035, BODY.headCenterY - 0.006, BODY.headRadius * 0.8];
 }
