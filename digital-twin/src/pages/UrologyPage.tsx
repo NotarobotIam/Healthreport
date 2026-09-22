@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageContainer, PageHeader } from '../components/dashboardUi';
 import { UrologyDiagram } from '../components/anatomy/UrologyDiagram';
 import { UROLOGY_BY_SEX, type UrologySex } from '../data/anatomy/urologyInfo';
 import { fetchReports } from '../data/remote/reportsApi';
 import type { ReportDTO } from '../types';
+
+// Three.js is ~1 MB; keep it out of the main bundle until this page is opened.
+const UrologyViewer = lazy(() => import('../components/anatomy/UrologyViewer'));
 
 const SEXES: { id: UrologySex; label: string }[] = [
   { id: 'male', label: 'Male' },
@@ -40,13 +43,22 @@ export function UrologyPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="Urologic & reproductive anatomy" subtitle="Labelled diagrams of the urinary tract, and the organs specific to each sex." />
+      <PageHeader title="Urologic & reproductive anatomy" subtitle="A real 3D model of the urinary tract and testes, plus labelled diagrams for both sexes." />
+
+      <div className="mx-auto mb-8 max-w-3xl rounded-2xl bg-hud-panel p-4 shadow-sm sm:p-5">
+        <h2 className="mb-3 text-base font-semibold text-hud-text">Your urinary tract & testes in 3D</h2>
+        <Suspense fallback={<p className="py-10 text-center text-sm text-hud-muted">Loading the 3D model…</p>}>
+          <UrologyViewer />
+        </Suspense>
+      </div>
 
       <p role="note" className="mx-auto mb-6 max-w-2xl rounded-lg bg-hud-amber/10 px-4 py-2.5 text-center text-sm text-hud-text">
-        A simplified schematic for orientation — not to scale, and not a scan of anyone's anatomy. The 3D body explorer on the{' '}
-        <Link to="/anatomy" className="underline">Anatomy page</Link> is built on an adult-male-only reference model, so this page covers the female organs it
-        does not include, alongside the male ones for comparison.
+        The 3D model above is real anatomy (from the same adult-male reference dataset as the{' '}
+        <Link to="/anatomy" className="underline">3D Anatomy page</Link> and the 3D heart) — it has no female reproductive structures, and there is no
+        equivalent free dataset to add them from. The simplified diagram below covers both sexes instead, including the organs the 3D model does not have.
       </p>
+
+      <h2 className="mx-auto mb-3 max-w-3xl text-base font-semibold text-hud-text">Simplified diagram (male & female)</h2>
 
       <div className="mx-auto mb-5 flex max-w-2xl justify-center gap-1.5" role="tablist" aria-label="Sex">
         {SEXES.map((s) => (
