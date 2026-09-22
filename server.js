@@ -1,33 +1,27 @@
-const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
+const config = require('./config');
+const { createApp } = require('./app');
+const { startResearchRefresher } = require('./lib/researchJob');
 
-const app = express();
+async function start() {
+  // The community stores real members' data, so there is no fallback mode:
+  // if the database is unreachable, refuse to start rather than run without it.
+  await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 });
+  console.log('MongoDB connected');
+  startResearchRefresher();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+  const server = createApp().listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`);
+  });
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/health-report', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+  const shutdown = () => {
+    server.close(() => mongoose.disconnect().finally(() => process.exit(0)));
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+}
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/reports', require('./routes/reports'));
-app.use('/api/users', require('./routes/users'));
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Server is running' });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+start().catch((err) => {
+  console.error('Failed to start:', err.message);
+  process.exit(1);
 });

@@ -20,7 +20,7 @@ export interface ReportDTO {
   _id: string;
   testName: string;
   testDate: string;
-  testType: 'Blood' | 'Urine' | 'Imaging' | 'Genetic' | 'Other';
+  testType: 'Blood' | 'Urine' | 'Imaging' | 'Genetic' | 'Cardiac' | 'Physical Exam' | 'Microbiome' | 'Other';
   results: {
     imaging?: ImagingMetadata;
     organMapping?: Record<string, BodyRegionState>;

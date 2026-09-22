@@ -1,189 +1,143 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const config = require('../config');
 const User = require('../models/User');
+const { HANDLE_PATTERN, EMAIL_PATTERN } = require('../models/User');
 const protect = require('../middleware/auth');
-const demoStore = require('../demoStore');
+const { signToken } = require('../middleware/auth');
+const { handler } = require('../middleware/errors');
+const { loginLimiter, registerLimiter } = require('../middleware/rateLimit');
+const { text, passwordProblem, RESERVED_HANDLES } = require('../lib/validate');
 
 const router = express.Router();
 
-// Demo mode flag
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Enable demo mode by default
+const GENDERS = ['Male', 'Female', 'Other'];
 
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'demo-secret-key', {
-    expiresIn: '30d',
-  });
-};
+// Compared against when the email is unknown, so "no such user" and "wrong
+// password" take the same time and can't be told apart by timing.
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', config.bcryptCost);
+
+const publicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  handle: user.handle,
+  role: user.role,
+});
 
 // @route   POST /api/auth/register
 // @desc    Register a user
 // @access  Public
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, dateOfBirth, gender, phone } = req.body;
+router.post(
+  '/register',
+  registerLimiter,
+  handler(async (req, res) => {
+    const body = req.body || {};
+    const name = text(body.name, { min: 1, max: 100 });
+    const email = text(body.email, { min: 3, max: 254 })?.toLowerCase();
+    const handle = text(body.handle, { min: 3, max: 20 })?.toLowerCase();
 
-    if (DEMO_MODE) {
-      // Demo mode - use in-memory store
-      let user = demoStore.findUserByEmail(email);
-      if (user) {
-        return res.status(400).json({ message: 'User already exists' });
+    if (!name) return res.status(400).json({ message: 'Please enter your name' });
+    if (!email || !EMAIL_PATTERN.test(email)) return res.status(400).json({ message: 'Please enter a valid email address' });
+    if (!handle || !HANDLE_PATTERN.test(handle)) {
+      return res.status(400).json({ message: 'Username must be 3-20 characters: lowercase letters, numbers and underscores' });
+    }
+    if (RESERVED_HANDLES.has(handle)) return res.status(400).json({ message: 'That username is not available' });
+
+    const pwProblem = passwordProblem(body.password, { email, handle });
+    if (pwProblem) return res.status(400).json({ message: pwProblem });
+
+    // Consent must be explicit: a health community holds sensitive information.
+    if (body.ageConfirmed !== true) return res.status(400).json({ message: 'You must confirm you are 18 or older' });
+    if (body.acceptTerms !== true) return res.status(400).json({ message: 'You must accept the Terms and Privacy Policy' });
+
+    let dateOfBirth;
+    if (body.dateOfBirth) {
+      dateOfBirth = new Date(body.dateOfBirth);
+      if (typeof body.dateOfBirth !== 'string' || Number.isNaN(dateOfBirth.getTime()) || dateOfBirth > new Date()) {
+        return res.status(400).json({ message: 'Please enter a valid date of birth' });
       }
+    }
+    const gender = body.gender && GENDERS.includes(body.gender) ? body.gender : undefined;
+    const phone = text(body.phone, { max: 30 }) || undefined;
 
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+    if (await User.exists({ email })) return res.status(409).json({ message: 'An account with this email already exists' });
+    if (await User.exists({ handle })) return res.status(409).json({ message: 'That username is taken' });
 
-      user = demoStore.createUser({
+    let user;
+    try {
+      user = await User.create({
         name,
         email,
-        password: hashedPassword,
+        handle,
+        password: body.password,
         dateOfBirth,
         gender,
         phone,
+        consent: { termsVersion: config.termsVersion, acceptedAt: new Date(), ageConfirmed: true },
       });
-
-      const token = generateToken(user._id);
-
-      return res.status(201).json({
-        success: true,
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-        },
-      });
+    } catch (err) {
+      // Lost a race with another sign-up between the checks above and the insert.
+      if (err.code === 11000) return res.status(409).json({ message: 'That email or username is already taken' });
+      throw err;
     }
 
-    // Database mode
-    // Check if user already exists
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Create user
-    user = new User({
-      name,
-      email,
-      password,
-      dateOfBirth,
-      gender,
-      phone,
-    });
-
-    await user.save();
-
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+    return res.status(201).json({ success: true, token: signToken(user), user: publicUser(user) });
+  }),
+);
 
 // @route   POST /api/auth/login
 // @desc    Login a user
 // @access  Public
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate email & password
-    if (!email || !password) {
+router.post(
+  '/login',
+  loginLimiter,
+  handler(async (req, res) => {
+    const email = text(req.body?.email, { min: 1, max: 254 })?.toLowerCase();
+    const password = typeof req.body?.password === 'string' ? req.body.password : null;
+    if (!email || !password || password.length > 128) {
       return res.status(400).json({ message: 'Please provide an email and password' });
     }
 
-    if (DEMO_MODE) {
-      // Demo mode - use in-memory store
-      const user = demoStore.findUserByEmail(email);
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
+    const user = await User.findOne({ email }).select('+password');
+    const ok = await bcrypt.compare(password, user ? user.password : DUMMY_HASH);
+    if (!user || !ok || user.status === 'deleted') return res.status(401).json({ message: 'Invalid credentials' });
 
-      // Check password
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-
-      const token = generateToken(user._id);
-
-      return res.status(200).json({
-        success: true,
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-        },
-      });
-    }
-
-    // Database mode
-    // Check for user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+    user.lastLoginAt = new Date();
+    await user.save();
+    return res.status(200).json({ success: true, token: signToken(user), user: publicUser(user) });
+  }),
+);
 
 // @route   GET /api/auth/me
 // @desc    Get current logged in user
 // @access  Private
-router.get('/me', protect, async (req, res) => {
-  try {
-    if (DEMO_MODE) {
-      const user = demoStore.findUserById(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      const { password, ...safeUser } = user;
-      return res.status(200).json({
-        success: true,
-        user: safeUser,
-      });
-    }
-
-    const user = await User.findById(req.user.id).select('-password');
-    res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+router.get('/me', protect, (req, res) => {
+  res.status(200).json({ success: true, user: req.account });
 });
+
+// @route   PUT /api/auth/password
+// @desc    Change password; signs out every other session
+// @access  Private
+router.put(
+  '/password',
+  protect,
+  loginLimiter,
+  handler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body || {};
+    const user = await User.findById(req.user.id).select('+password');
+    if (typeof currentPassword !== 'string' || !(await user.matchPassword(currentPassword))) {
+      // 403, not 401: the session is fine, only this confirmation failed (a 401 would sign the user out).
+      return res.status(403).json({ message: 'Current password is incorrect' });
+    }
+    const problem = passwordProblem(newPassword, { email: user.email, handle: user.handle });
+    if (problem) return res.status(400).json({ message: problem });
+
+    user.password = newPassword;
+    user.tokenVersion += 1;
+    await user.save();
+    return res.status(200).json({ success: true, token: signToken(user) });
+  }),
+);
 
 module.exports = router;

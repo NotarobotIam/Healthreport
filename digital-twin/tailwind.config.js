@@ -17,6 +17,10 @@ export default {
       colors: {
         hud: {
           bg: '#f5f5f5',
+          // Warm base tint for the Dashboard/Community pages (see FriendlyBackground): close enough to
+          // `bg` that panels and text never need their own overrides, just enough colour that the page
+          // doesn't read as flat grey once the decorative wash above it has scrolled out of view.
+          bgWarm: '#f8f7fb',
           panel: '#ffffff',
           panel2: '#f8f9fa',
           border: '#ecf0f1',

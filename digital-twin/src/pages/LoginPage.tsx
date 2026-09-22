@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { login as loginRequest } from '../data/remote/authApi';
 import { useAuth } from '../auth/AuthContext';
 import { Button, FormField, fieldClassName, AlertBanner } from '../components/dashboardUi';
+import { AuthBanner } from '../components/layout/AuthBanner';
 
 export function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -32,7 +33,8 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] p-5">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] p-5">
+      <AuthBanner />
       <div className="w-full max-w-[400px] rounded-[10px] bg-white p-10 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
         <h1 className="mb-7 text-center text-2xl font-semibold text-hud-text">Login</h1>
         {error && <AlertBanner tone="danger">{error}</AlertBanner>}

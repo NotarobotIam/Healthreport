@@ -5,6 +5,7 @@ const NAV_LINKS: { to: string; label: string }[] = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/overview', label: 'Overview' },
   { to: '/anatomy', label: 'Anatomy' },
+  { to: '/community', label: 'Community' },
   { to: '/physiology', label: 'Physiology' },
   { to: '/pathology', label: 'Pathology' },
   { to: '/simulation', label: 'Simulation' },
@@ -22,6 +23,8 @@ const NAV_LINKS: { to: string; label: string }[] = [
  */
 export function TopNav() {
   const { user, logout } = useAuth();
+  const isModerator = user?.role === 'moderator' || user?.role === 'admin';
+  const links = isModerator ? [...NAV_LINKS, { to: '/moderation', label: 'Moderation' }] : NAV_LINKS;
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between bg-[#2c3e50] px-4 shadow-md">
@@ -33,7 +36,7 @@ export function TopNav() {
       </div>
 
       <nav className="flex flex-1 items-center justify-center gap-1 overflow-x-auto whitespace-nowrap px-4">
-        {NAV_LINKS.map((link) => (
+        {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
@@ -52,8 +55,8 @@ export function TopNav() {
         <span className="hud-status-dot h-1.5 w-1.5 rounded-full bg-hud-green" />
         <span className="hidden text-[10px] uppercase tracking-widest text-[#ecf0f1] sm:inline">Normal</span>
         <div className="mx-1 h-5 w-px bg-white/15" />
-        <NavLink to="/profile" className="text-xs text-[#ecf0f1] hover:text-hud-cyan">
-          {user?.name ?? 'Profile'}
+        <NavLink to="/account" className="text-xs text-[#ecf0f1] hover:text-hud-cyan" title="Account &amp; privacy">
+          {user?.handle ?? 'Account'}
         </NavLink>
         <button
           type="button"

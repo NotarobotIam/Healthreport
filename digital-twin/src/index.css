@@ -62,3 +62,40 @@ body {
 .hud-status-dot {
   animation: hud-pulse 2s ease-in-out infinite;
 }
+
+/* Printing the doctor summary: the app frame is a fixed-height, scroll-clipped layout, so undo that for print. */
+@media print {
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body,
+  #root,
+  .h-screen,
+  .h-full,
+  .overflow-hidden,
+  .overflow-y-auto {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  /* Only the summary is printed, whatever page it sits on. */
+  #root * {
+    visibility: hidden;
+  }
+  #doctor-summary,
+  #doctor-summary * {
+    visibility: visible;
+  }
+  #doctor-summary {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+  }
+}

@@ -14,6 +14,8 @@ import {
   TableCell,
 } from '../components/dashboardUi';
 import { Badge } from '../components/common';
+import { fieldLabel as examFieldLabel } from '../data/physiology/examCatalog';
+import { GUT_BACTERIA_INFO, gutFieldLabel } from '../data/pathology/gutCatalog';
 import type { ReportDTO } from '../types';
 
 interface EditFormData {
@@ -85,6 +87,18 @@ export function ReportDetailPage() {
     );
   }
 
+  // `examKind` (e.g. "sequencing", "ecg") picks the right catalogue of friendly names for this report's raw
+  // result keys — without it, the table below would just show the stored field names verbatim (firmicutesPct,
+  // heartRate, ...). It's an internal detail used only for that lookup, so it's excluded from the table itself.
+  const rawResults = report.results as Record<string, unknown>;
+  const examKind = typeof rawResults.examKind === 'string' ? rawResults.examKind : undefined;
+  const isMicrobiome = report.testType === 'Microbiome';
+  const labelFor = (key: string) => (isMicrobiome ? gutFieldLabel(examKind, key) : examFieldLabel(examKind, key));
+  const resultEntries = Object.entries(report.results || {}).filter(([key]) => key !== 'examKind');
+  // Only a microbiome *sequencing* panel names individual bacterial groups; the other gut tests (calprotectin,
+  // stool analysis, breath test) don't, so this stays empty for them.
+  const bacteriaGlossary = isMicrobiome ? resultEntries.filter(([key]) => key in GUT_BACTERIA_INFO) : [];
+
   return (
     <PageContainer>
       <div className="mx-auto max-w-[900px]">
@@ -120,15 +134,34 @@ export function ReportDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(report.results || {}).map(([key, value]) => (
-                    <tr key={key}>
-                      <TableCell>{key}</TableCell>
-                      <TableCell>{typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}</TableCell>
-                    </tr>
-                  ))}
+                  {resultEntries.map(([key, value]) => {
+                    const { label, unit } = labelFor(key);
+                    const shown = typeof value === 'object' && value !== null ? JSON.stringify(value) : `${String(value)}${unit ? ` ${unit}` : ''}`;
+                    return (
+                      <tr key={key}>
+                        <TableCell>{label}</TableCell>
+                        <TableCell>{shown}</TableCell>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </div>
+
+            {bacteriaGlossary.length > 0 && (
+              <div className="border-b border-hud-border p-5">
+                <h3 className="mb-1 text-base font-semibold text-hud-text">What are these bacteria?</h3>
+                <p className="mb-4 text-xs text-hud-muted">General background on each group found in this test — not an interpretation of your own results. There's no agreed "healthy" share for any of them.</p>
+                <dl className="flex flex-col gap-3">
+                  {bacteriaGlossary.map(([key]) => (
+                    <div key={key}>
+                      <dt className="text-sm font-semibold text-hud-text">{labelFor(key).label}</dt>
+                      <dd className="mt-0.5 text-sm leading-relaxed text-hud-muted">{GUT_BACTERIA_INFO[key]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
 
             {report.notes && (
               <div className="border-b border-hud-border p-5 last:border-b-0">
@@ -139,8 +172,8 @@ export function ReportDetailPage() {
 
             <div className="flex gap-2.5 p-5">
               <Button onClick={() => setEditing(true)}>Edit Report</Button>
-              <Button variant="secondary" onClick={() => navigate('/dashboard')}>
-                Back to Dashboard
+              <Button variant="secondary" onClick={() => navigate('/reports')}>
+                Back to Reports
               </Button>
             </div>
           </div>

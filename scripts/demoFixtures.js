@@ -1,11 +1,13 @@
-// In-memory demo storage for testing without MongoDB
-// This stores data temporarily while the app is running
+// Sample test reports used only by scripts/seed-dev.js. (This used to be the in-memory
+// "demo mode" store; the app now always uses MongoDB.)
 
 class DemoStore {
   constructor() {
     this.users = new Map();
     this.reports = new Map();
     this.nextReportId = 1;
+    this.painEntries = new Map();
+    this.nextPainId = 1;
 
     // Add a pre-populated demo user
     this.users.set('demo@test.com', {
@@ -373,65 +375,6 @@ class DemoStore {
     // ids past that so a real POST /api/reports never collides with (and
     // silently overwrites) a seeded report.
     this.nextReportId = 16;
-  }
-
-  // User methods
-  findUserByEmail(email) {
-    return this.users.get(email);
-  }
-
-  findUserById(id) {
-    for (let user of this.users.values()) {
-      if (user._id === id) return user;
-    }
-    return null;
-  }
-
-  createUser(userData) {
-    const user = {
-      _id: 'user-' + Math.random().toString(36).substr(2, 9),
-      ...userData,
-    };
-    this.users.set(userData.email, user);
-    return user;
-  }
-
-  // Report methods
-  getReportsByUserId(userId, testType) {
-    const userReports = [];
-    for (let report of this.reports.values()) {
-      if (report.userId !== userId) continue;
-      if (testType && report.testType !== testType) continue;
-      userReports.push(report);
-    }
-    return userReports.sort((a, b) => new Date(b.testDate) - new Date(a.testDate));
-  }
-
-  getReportById(id) {
-    return this.reports.get(id);
-  }
-
-  createReport(reportData) {
-    const report = {
-      _id: 'report-' + this.nextReportId++,
-      ...reportData,
-      createdAt: new Date(),
-    };
-    this.reports.set(report._id, report);
-    return report;
-  }
-
-  updateReport(id, updateData) {
-    const report = this.reports.get(id);
-    if (report) {
-      Object.assign(report, updateData);
-      return report;
-    }
-    return null;
-  }
-
-  deleteReport(id) {
-    return this.reports.delete(id);
   }
 }
 
