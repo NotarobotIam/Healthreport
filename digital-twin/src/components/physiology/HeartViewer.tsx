@@ -141,7 +141,14 @@ export default function HeartViewer({ heartRate }: { heartRate?: number | null }
     const resize = () => {
       const w = el.clientWidth || 1;
       const h = el.clientHeight || 1;
-      renderer.setSize(w, h, false);
+      // `updateStyle` (the 3rd arg) must stay at its default (true): it's what makes Three.js set the
+      // canvas's own CSS width/height to match the container. Without it, the canvas's on-screen size
+      // falls back to its drawing-buffer size — w/h scaled up by devicePixelRatio — so on any HiDPI/Retina
+      // display (devicePixelRatio 2) the canvas rendered at literally double its container's size and got
+      // clipped by the container's overflow-hidden, leaving only a corner of the (dead-centre) heart
+      // visible. Invisible in this repo's own testing, which runs headless Chromium at devicePixelRatio 1,
+      // where the drawing buffer and the container happen to already be the same size.
+      renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
