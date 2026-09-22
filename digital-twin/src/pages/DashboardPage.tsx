@@ -139,7 +139,7 @@ export function DashboardPage() {
 
   return (
     <PageContainer>
-      <header className="mb-6 rounded-3xl bg-gradient-to-br from-[#e3f1ff] via-[#eaeeff] to-[#f4e9fc] px-6 py-8 sm:px-10">
+      <header className="mb-6 rounded-3xl bg-gradient-to-br from-[#e3f1ff] via-[#eaeeff] to-[#f4e9fc] px-6 py-8 dark:from-[#152238] dark:via-[#1c2035] dark:to-[#2a2140] sm:px-10">
         <p className="text-sm font-medium text-hud-text/70">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
         <h1 className="mt-1 text-3xl font-semibold text-hud-text">
           {greeting()}, {firstName}
@@ -151,8 +151,8 @@ export function DashboardPage() {
         </p>
         <div className="mt-5 flex flex-wrap gap-2.5">
           <Link to="/anatomy" className="rounded-full bg-[#007bff] px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#0056b3]">Log how you feel</Link>
-          <Link to="/community/matches" className="rounded-full bg-white/80 px-5 py-2 text-sm font-semibold text-hud-text ring-1 ring-black/5 hover:bg-white">Find people like me</Link>
-          <Link to="/reports" className="rounded-full bg-white/80 px-5 py-2 text-sm font-semibold text-hud-text ring-1 ring-black/5 hover:bg-white">My reports</Link>
+          <Link to="/community/matches" className="rounded-full bg-white/80 px-5 py-2 text-sm font-semibold text-hud-text ring-1 ring-black/5 hover:bg-white dark:bg-white/10 dark:ring-white/10 dark:hover:bg-white/15">Find people like me</Link>
+          <Link to="/reports" className="rounded-full bg-white/80 px-5 py-2 text-sm font-semibold text-hud-text ring-1 ring-black/5 hover:bg-white dark:bg-white/10 dark:ring-white/10 dark:hover:bg-white/15">My reports</Link>
         </div>
       </header>
 

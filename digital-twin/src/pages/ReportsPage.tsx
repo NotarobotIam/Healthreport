@@ -12,6 +12,7 @@ import {
   LoadingScreen,
 } from '../components/dashboardUi';
 import { Badge } from '../components/common';
+import { AddImagingReportForm } from '../components/reports/AddImagingReportForm';
 import type { ReportDTO } from '../types';
 
 const TEST_TYPES = ['Blood', 'Urine', 'Imaging', 'Genetic', 'Cardiac', 'Physical Exam', 'Microbiome', 'Other'];
@@ -32,6 +33,7 @@ export function ReportsPage() {
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showImagingForm, setShowImagingForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<ReportFormData>(INITIAL_FORM);
   const [typeFilter, setTypeFilter] = useState<string>('All');
@@ -119,9 +121,37 @@ export function ReportsPage() {
 
       {error && <AlertBanner tone="danger">{error}</AlertBanner>}
 
-      <div className="mb-7">
-        <Button onClick={() => setShowForm((prev) => !prev)}>{showForm ? 'Cancel' : '+ Add New Report'}</Button>
+      <div className="mb-7 flex flex-wrap gap-2">
+        <Button
+          onClick={() => {
+            setShowImagingForm((prev) => !prev);
+            setShowForm(false);
+          }}
+        >
+          {showImagingForm ? 'Cancel' : '+ Add a scan (X-ray, MRI…)'}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setShowForm((prev) => !prev);
+            setShowImagingForm(false);
+          }}
+        >
+          {showForm ? 'Cancel' : '+ Add another report'}
+        </Button>
       </div>
+
+      {showImagingForm && (
+        <div className="mb-7">
+          <AddImagingReportForm
+            onSaved={(r) => {
+              setReports((prev) => [r, ...prev]);
+              setShowImagingForm(false);
+            }}
+            onCancel={() => setShowImagingForm(false)}
+          />
+        </div>
+      )}
 
       {showForm && (
         <Card as="form" onSubmit={handleFormSubmit} className="mb-7">

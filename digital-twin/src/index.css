@@ -2,8 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light/dark tokens, as "R G B" triplets (no commas) so tailwind.config.js's `rgb(var(--x) / <alpha-value>)`
+   colours can still take opacity modifiers, e.g. `bg-hud-red/10`. Switched by ThemeContext setting
+   `data-theme` on <html>; see the comment above `colors.hud` in tailwind.config.js for the full picture. */
 :root {
   color-scheme: light;
+  --hud-bg: 245 245 245;
+  --hud-bgWarm: 248 247 251;
+  --hud-panel: 255 255 255;
+  --hud-panel2: 248 249 250;
+  --hud-border: 236 240 241;
+  --hud-borderLight: 222 226 230;
+  --hud-text: 44 62 80;
+  --hud-muted: 127 140 141;
+  --hud-cyan: 52 152 219;
+  --hud-amber: 245 166 35;
+  --hud-red: 220 53 69;
+  --hud-blue: 59 130 246;
+  --hud-green: 40 167 69;
+  --hud-purple: 168 85 247;
+  --hud-yellow: 234 179 8;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --hud-bg: 15 18 25;
+  --hud-bgWarm: 19 21 32;
+  --hud-panel: 26 31 41;
+  --hud-panel2: 35 41 53;
+  --hud-border: 43 50 64;
+  --hud-borderLight: 58 68 86;
+  --hud-text: 230 233 240;
+  --hud-muted: 148 159 179;
+  --hud-cyan: 86 182 240;
+  --hud-amber: 247 187 82;
+  --hud-red: 242 103 125;
+  --hud-blue: 109 153 247;
+  --hud-green: 70 210 129;
+  --hud-purple: 196 139 251;
+  --hud-yellow: 242 211 78;
 }
 
 html,
@@ -19,7 +56,7 @@ body {
 /* Thin technical scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #dee2e6 transparent;
+  scrollbar-color: rgb(var(--hud-borderLight)) transparent;
 }
 *::-webkit-scrollbar {
   width: 6px;
@@ -29,15 +66,15 @@ body {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #dee2e6;
+  background-color: rgb(var(--hud-borderLight));
   border-radius: 3px;
 }
 
 /* Subtle background grid used behind dense panels for the "scientific HUD" feel */
 .hud-grid-bg {
   background-image:
-    linear-gradient(to right, rgba(44, 62, 80, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(44, 62, 80, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgb(var(--hud-text) / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--hud-text) / 0.04) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 

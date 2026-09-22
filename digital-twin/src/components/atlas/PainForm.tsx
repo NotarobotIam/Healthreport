@@ -181,7 +181,7 @@ export function PainForm({ location, initial, onChangeSpot, onSubmit, onCancel }
           max={nowLocal}
           onChange={(e) => setOnset(e.target.value)}
           aria-label="Date and time the pain started"
-          className="w-full rounded-md border border-hud-borderLight px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none"
+          className="w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none"
         />
       </Field>
 
@@ -249,7 +249,7 @@ export function PainForm({ location, initial, onChangeSpot, onSubmit, onCancel }
           value={radiatesTo}
           maxLength={120}
           onChange={(e) => setRadiatesTo(e.target.value)}
-          className="w-full rounded-md border border-hud-borderLight px-3 py-2 text-sm focus:border-hud-cyan focus:outline-none"
+          className="w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none"
         />
       </Field>
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DEFAULT_VISIBLE, loadAtlas, sideOf, type Atlas, type SystemId, type View } from '../atlas/anatomy';
 import type { CameraRequest, PainMarker, PickResult, Vec3 } from '../atlas/AnatomyScene';
 import { LayerPanel } from '../components/atlas/LayerPanel';
@@ -219,7 +219,7 @@ export function AnatomyPage() {
             Rotate the body to get the right angle. If the pain feels deeper than the muscles, hide layers on the left
             first, then tap.
           </p>
-          <button type="button" onClick={backToBrowse} className="mt-3 rounded-md border border-hud-borderLight bg-white px-3 py-1.5 text-xs font-medium hover:bg-hud-panel2">
+          <button type="button" onClick={backToBrowse} className="mt-3 rounded-md border border-hud-borderLight bg-hud-panel px-3 py-1.5 text-xs font-medium hover:bg-hud-panel2">
             Cancel
           </button>
         </div>
@@ -279,7 +279,13 @@ export function AnatomyPage() {
       <aside className="hidden w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-hud-border bg-hud-panel p-4 lg:flex">
         {atlas && <PartSearch atlas={atlas} onSelect={selectFromSearch} />}
         <LayerPanel visible={visible} onChange={setVisible} />
-        <p className="mt-auto text-[10px] leading-relaxed text-hud-muted">
+        <Link
+          to="/urology"
+          className="mt-auto rounded-lg border border-hud-borderLight bg-hud-panel2 px-3 py-2.5 text-xs leading-relaxed text-hud-text hover:border-hud-cyan"
+        >
+          This model is an adult-male-only reference — it has no female reproductive anatomy. See labelled diagrams for both →
+        </Link>
+        <p className="text-[10px] leading-relaxed text-hud-muted">
           Adult male reference anatomy. Educational only — not a diagnostic tool. Model: BodyParts3D © DBCLS, CC BY 4.0.{' '}
           <a href="/ATTRIBUTION.md" target="_blank" rel="noreferrer" className="underline">
             Credits
@@ -307,7 +313,7 @@ export function AnatomyPage() {
           </Suspense>
         )}
 
-        <div className="absolute left-3 top-3 flex gap-1 rounded-lg bg-white/90 p-1 shadow">
+        <div className="absolute left-3 top-3 flex gap-1 rounded-lg bg-hud-panel/90 p-1 shadow">
           {VIEWS.map((v) => (
             <button key={v.id} type="button" onClick={() => requestView(v.id)} className="rounded-md px-2.5 py-1 text-xs font-medium text-hud-text hover:bg-hud-panel2">
               {v.label}
@@ -322,7 +328,7 @@ export function AnatomyPage() {
         )}
 
         {loading && !fatal && (
-          <div role="status" className="absolute inset-x-0 bottom-6 mx-auto w-64 rounded-lg bg-white/95 p-3 text-center shadow">
+          <div role="status" className="absolute inset-x-0 bottom-6 mx-auto w-64 rounded-lg bg-hud-panel/95 p-3 text-center shadow">
             <p className="text-xs font-medium text-hud-text">Loading anatomy… {progress}%</p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-hud-border">
               <div className="h-full bg-hud-cyan transition-[width]" style={{ width: `${progress}%` }} />
@@ -332,7 +338,7 @@ export function AnatomyPage() {
 
         {fatal && (
           <div role="alert" className="absolute inset-0 flex items-center justify-center p-6">
-            <p className="max-w-sm rounded-lg bg-white p-4 text-center text-sm text-hud-red shadow">{fatal}</p>
+            <p className="max-w-sm rounded-lg bg-hud-panel p-4 text-center text-sm text-hud-red shadow">{fatal}</p>
           </div>
         )}
       </main>

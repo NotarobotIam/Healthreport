@@ -36,7 +36,7 @@ export function PartSearch({ atlas, onSelect }: PartSearchProps) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="e.g. femur, liver, biceps"
-        className="w-full rounded-md border border-hud-borderLight bg-white px-3 py-2 text-sm text-hud-text placeholder:text-hud-muted focus:border-hud-cyan focus:outline-none"
+        className="w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text placeholder:text-hud-muted focus:border-hud-cyan focus:outline-none"
       />
       {query.trim().length >= 2 && (
         <ul className="mt-2 max-h-64 overflow-y-auto rounded-md border border-hud-border">

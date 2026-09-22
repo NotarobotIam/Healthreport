@@ -276,7 +276,7 @@ export function ThreadPage() {
               onChange={(e) => setEditTitle(e.target.value)}
               maxLength={140}
               aria-label="Title"
-              className="w-full rounded-md border border-hud-borderLight px-3 py-2 text-lg font-semibold focus:border-hud-cyan focus:outline-none"
+              className="w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-lg font-semibold text-hud-text focus:border-hud-cyan focus:outline-none"
             />
             <Composer
               initial={thread.body ?? ''}

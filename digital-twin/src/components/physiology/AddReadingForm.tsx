@@ -5,7 +5,7 @@ import { toLocalInputValue } from '../atlas/painFormat';
 import type { VitalDTO, VitalInput } from '../../types';
 
 const UNITS_KEY = 'vitalDtUnits';
-const inputClass = 'w-full rounded-md border border-hud-borderLight px-3 py-2 text-sm focus:border-hud-cyan focus:outline-none';
+const inputClass = 'w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none';
 
 function readUnits(): 'metric' | 'imperial' {
   try {

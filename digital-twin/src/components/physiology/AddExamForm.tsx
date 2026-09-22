@@ -3,7 +3,7 @@ import { createReport } from '../../data/remote/reportsApi';
 import { CATEGORY_LABEL, EXAM_BY_ID, EXAM_TEMPLATES, type ExamCategory } from '../../data/physiology/examCatalog';
 import type { ReportDTO } from '../../types';
 
-const inputClass = 'w-full rounded-md border border-hud-borderLight px-3 py-2 text-sm focus:border-hud-cyan focus:outline-none';
+const inputClass = 'w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none';
 const today = () => new Date().toISOString().slice(0, 10);
 
 interface Props {

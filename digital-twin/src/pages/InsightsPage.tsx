@@ -174,13 +174,13 @@ export function InsightsPage() {
           {kind && ks && (
             <>
               {ks.basic.reason === 'need-more-logs' && (
-                <section className="rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-5" aria-label="Progress">
+                <section className="rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-5 dark:from-[#16233a] dark:to-[#241f38]" aria-label="Progress">
                   <p className="text-base font-semibold text-hud-text">{ks.count} of {status.threshold} {NOUN[kind]}</p>
                   <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/70" role="progressbar" aria-valuemin={0} aria-valuemax={status.threshold} aria-valuenow={ks.count}>
                     <div className="h-full rounded-full bg-[#007bff]" style={{ width: `${(ks.count / status.threshold) * 100}%` }} />
                   </div>
                   <p className="mt-3 text-sm text-hud-text/80">A pattern needs a few data points. Add {ks.basic.remaining} more and your free summary unlocks.</p>
-                  <Link to={WHERE[kind].to} className="mt-3 inline-block rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-hud-cyan shadow-sm">{WHERE[kind].label}</Link>
+                  <Link to={WHERE[kind].to} className="mt-3 inline-block rounded-full bg-hud-panel px-4 py-1.5 text-sm font-semibold text-hud-cyan shadow-sm">{WHERE[kind].label}</Link>
                 </section>
               )}
 

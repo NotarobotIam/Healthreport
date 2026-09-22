@@ -239,6 +239,36 @@ async function main() {
     console.log('Added demo gut microbiome results');
   }
 
+  // --- two reference ultrasound reports (male and female), for demoing the Imaging/scan report type.
+  // Findings are plausible normal-reference text, not a real scan — clearly labelled as such below.
+  if (!(await TestReport.exists({ userId: demo._id, 'results.imaging.bodyRegion': /prostate/i }))) {
+    const scan = (testName, daysAgoN, imaging) => TestReport.create({
+      userId: demo._id, testName, testType: 'Imaging', testDate: new Date(Date.now() - daysAgoN * 86400000),
+      results: { imaging },
+      doctor: { name: 'Dr. Whitfield', clinic: 'Riverside Radiology' },
+      notes: 'Reference example for product demos — not a real scan.',
+      normal: true,
+    });
+    await scan('Ultrasound — Kidneys, bladder and prostate', 45, {
+      modality: 'Ultrasound', bodyRegion: 'Kidneys, bladder and prostate',
+      findings: 'Right kidney: normal size and echotexture, 10.8 cm, no hydronephrosis or calculi. '
+        + 'Left kidney: normal size and echotexture, 11.0 cm, no hydronephrosis or calculi. '
+        + 'Bladder: normal wall thickness, no masses; post-void residual 15 mL. '
+        + 'Prostate: normal size and contour, estimated volume 22 mL, no focal lesion. '
+        + 'Impression: normal renal, bladder and prostate ultrasound; no evidence of obstruction or calculi.',
+    });
+    await scan('Ultrasound — Kidneys, bladder, uterus and ovaries', 45, {
+      modality: 'Ultrasound', bodyRegion: 'Kidneys, bladder, uterus and ovaries',
+      findings: 'Right kidney: normal size and echotexture, 10.5 cm, no hydronephrosis or calculi. '
+        + 'Left kidney: normal size and echotexture, 10.7 cm, no hydronephrosis or calculi. '
+        + 'Bladder: normal wall thickness, no masses; well distended at time of scan. '
+        + 'Uterus: anteverted, normal size and contour, endometrial stripe within normal limits. '
+        + 'Ovaries: both normal in size with a normal follicular pattern; no adnexal mass. '
+        + 'Impression: normal renal, bladder and pelvic ultrasound; no sonographic abnormality.',
+    });
+    console.log('Added demo ultrasound reports');
+  }
+
   // --- enough pain logs for the demo login to try AI insights (idempotent)
   if (!(await PainEntry.exists({ userId: demo._id }))) {
     const shoulderPart = parts.shoulder;

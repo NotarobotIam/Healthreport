@@ -73,7 +73,7 @@ export function GroupPage() {
       <CommunityNav />
       <Link to="/community/groups" className="text-sm text-hud-cyan hover:underline">← All communities</Link>
 
-      <header className="mb-6 mt-3 rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-6">
+      <header className="mb-6 mt-3 rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-6 dark:from-[#16233a] dark:to-[#241f38]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="max-w-xl">
             <h1 className="text-2xl font-semibold text-hud-text">{group.name}</h1>
@@ -89,7 +89,7 @@ export function GroupPage() {
               disabled={busy}
               aria-pressed={group.joined}
               className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
-                group.joined ? 'bg-white text-hud-green ring-1 ring-hud-green/40 hover:bg-hud-green/5' : 'bg-[#007bff] text-white hover:bg-[#0056b3]'
+                group.joined ? 'bg-hud-panel text-hud-green ring-1 ring-hud-green/40 hover:bg-hud-green/5' : 'bg-[#007bff] text-white hover:bg-[#0056b3]'
               }`}
             >
               {group.joined ? '✓ Joined' : 'Join this community'}

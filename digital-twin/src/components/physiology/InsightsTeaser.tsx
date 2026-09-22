@@ -21,16 +21,16 @@ export function InsightsTeaser({ kind }: { kind: InsightKind }) {
   else line = 'Open to see your summary.';
 
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-5" aria-label="AI-assisted insights">
+    <section className="rounded-2xl bg-gradient-to-br from-[#eaf4fe] to-[#f1ecfb] p-5 dark:from-[#16233a] dark:to-[#241f38]" aria-label="AI-assisted insights">
       <h2 className="flex items-center gap-2 text-base font-semibold text-hud-text"><span aria-hidden="true">✨</span> Insights &amp; questions</h2>
       <p className="mt-1 text-sm text-hud-text/80">A free summary of your patterns, an optional AI look, and a place to ask a question. Never a diagnosis.</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70" role="progressbar" aria-valuemin={0} aria-valuemax={status.threshold} aria-valuenow={shown}>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-hud-panel/70" role="progressbar" aria-valuemin={0} aria-valuemax={status.threshold} aria-valuenow={shown}>
         <div className="h-full rounded-full bg-[#007bff]" style={{ width: `${(shown / status.threshold) * 100}%` }} />
       </div>
       <p className="mt-2 text-xs text-hud-text/70">
         {s.count >= status.threshold ? `${s.count} ${noun}` : `${shown} of ${status.threshold} ${noun}`} · {line}
       </p>
-      <Link to={`/insights?kind=${kind}`} className="mt-3 inline-block rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-hud-cyan shadow-sm hover:bg-white/90">
+      <Link to={`/insights?kind=${kind}`} className="mt-3 inline-block rounded-full bg-hud-panel px-4 py-1.5 text-sm font-semibold text-hud-cyan shadow-sm hover:bg-hud-panel/90">
         {s.basic.eligible || status.unresolved || s.latest ? 'Open insights' : 'Learn more'}
       </Link>
     </section>

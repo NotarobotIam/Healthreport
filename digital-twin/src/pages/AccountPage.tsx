@@ -6,6 +6,7 @@ import { fetchBlocked, unblockMember } from '../data/remote/communityApi';
 import { updateUserProfile } from '../data/remote/userApi';
 import { setStoredToken } from '../auth/tokenStore';
 import { PageContainer } from '../components/dashboardUi';
+import { useTheme, type Theme } from '../theme/ThemeContext';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -16,7 +17,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const inputClass = 'w-full rounded-md border border-hud-borderLight px-3 py-2 text-sm focus:border-hud-cyan focus:outline-none';
+const inputClass = 'w-full rounded-md border border-hud-borderLight bg-hud-panel px-3 py-2 text-sm text-hud-text focus:border-hud-cyan focus:outline-none';
 
 function Status({ ok, children }: { ok: boolean; children: ReactNode }) {
   return (
@@ -26,8 +27,14 @@ function Status({ ok, children }: { ok: boolean; children: ReactNode }) {
   );
 }
 
+const THEMES: { id: Theme; label: string; icon: string }[] = [
+  { id: 'light', label: 'Light', icon: '☀️' },
+  { id: 'dark', label: 'Dark', icon: '🌙' },
+];
+
 export function AccountPage() {
   const { user, setUser, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const [bio, setBio] = useState(user?.bio ?? '');
   const [bioMsg, setBioMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -96,6 +103,27 @@ export function AccountPage() {
             share. <Link to="/privacy" className="underline">Privacy Policy</Link>
           </p>
         </div>
+
+        <Section title="Appearance">
+          <p className="mb-3 text-sm text-hud-muted">Choose how the app looks. This is saved on this device.</p>
+          <div className="flex gap-2" role="radiogroup" aria-label="Colour theme">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === t.id}
+                onClick={() => setTheme(t.id)}
+                className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                  theme === t.id ? 'border-hud-cyan bg-hud-cyan/10 text-hud-cyan' : 'border-hud-borderLight text-hud-text hover:bg-hud-panel2'
+                }`}
+              >
+                <span aria-hidden="true">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </Section>
 
         <Section title="Your public profile">
           <p className="mb-3 text-sm text-hud-text">

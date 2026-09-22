@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchReport, updateReport } from '../data/remote/reportsApi';
 import {
   PageContainer,
@@ -22,6 +22,8 @@ interface EditFormData {
   notes: string;
   normal: boolean;
 }
+
+const IMAGING_FIELD_LABELS: Record<string, string> = { modality: 'Modality', bodyRegion: 'Body region', findings: 'Findings' };
 
 export function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -93,11 +95,26 @@ export function ReportDetailPage() {
   const rawResults = report.results as Record<string, unknown>;
   const examKind = typeof rawResults.examKind === 'string' ? rawResults.examKind : undefined;
   const isMicrobiome = report.testType === 'Microbiome';
-  const labelFor = (key: string) => (isMicrobiome ? gutFieldLabel(examKind, key) : examFieldLabel(examKind, key));
-  const resultEntries = Object.entries(report.results || {}).filter(([key]) => key !== 'examKind');
+  const labelFor = (key: string) => {
+    if (key.startsWith('imaging.')) return { label: IMAGING_FIELD_LABELS[key.slice(8)] ?? key.slice(8) };
+    return isMicrobiome ? gutFieldLabel(examKind, key) : examFieldLabel(examKind, key);
+  };
+  const resultEntries = Object.entries(report.results || {}).flatMap<[string, unknown]>(([key, value]) => {
+    if (key === 'examKind') return [];
+    // A scan's { modality, bodyRegion, findings } is stored as one nested object; show each part as its
+    // own friendly row instead of dumping the raw object as a single "imaging: {...}" line.
+    if (key === 'imaging' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]): [string, unknown] => [`imaging.${k}`, v]);
+    }
+    return [[key, value] as [string, unknown]];
+  });
   // Only a microbiome *sequencing* panel names individual bacterial groups; the other gut tests (calprotectin,
   // stool analysis, breath test) don't, so this stays empty for them.
   const bacteriaGlossary = isMicrobiome ? resultEntries.filter(([key]) => key in GUT_BACTERIA_INFO) : [];
+  const bodyRegion = String((rawResults.imaging as { bodyRegion?: string } | undefined)?.bodyRegion ?? '');
+  const urologySex = /prostate/i.test(bodyRegion) ? 'male' : /uterus|ovar/i.test(bodyRegion) ? 'female' : null;
 
   return (
     <PageContainer>
@@ -111,6 +128,14 @@ export function ReportDetailPage() {
             {report.normal === false ? 'Abnormal' : 'Normal'}
           </Badge>
         </Card>
+
+        {urologySex && (
+          <Card className="mb-7">
+            <p className="text-sm text-hud-text">
+              See a labelled diagram of this anatomy: <Link to="/urology" className="font-medium text-hud-cyan hover:underline">Urologic &amp; reproductive anatomy →</Link>
+            </p>
+          </Card>
+        )}
 
         {!editing ? (
           <div className="overflow-hidden rounded-lg bg-hud-panel shadow">

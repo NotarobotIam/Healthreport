@@ -24,6 +24,7 @@ import { GuidelinesPage, PrivacyPage, TermsPage } from './pages/LegalPages';
 import { useAuth } from './auth/AuthContext';
 import { OverviewPage, SimulationPage } from './pages/OtherPages';
 import { PathologyPage } from './pages/PathologyPage';
+import { UrologyPage } from './pages/UrologyPage';
 import { PhysiologyPage } from './pages/PhysiologyPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { ReportsPage } from './pages/ReportsPage';
@@ -98,6 +99,7 @@ function ProtectedShell() {
           <Route path="/physiology" element={<PhysiologyPage />} />
           <Route path="/insights" element={<InsightsPage />} />
           <Route path="/pathology" element={<PathologyPage />} />
+          <Route path="/urology" element={<UrologyPage />} />
           <Route path="/simulation" element={<SimulationPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           {/* Content comes from the sibling tree above; this route entry only stops <Routes> from warning about an unmatched path. */}
