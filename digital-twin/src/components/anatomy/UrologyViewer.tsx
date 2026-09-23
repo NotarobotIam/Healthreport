@@ -40,6 +40,7 @@ interface ViewState {
 
 interface SceneApi {
   apply: (s: ViewState) => void;
+  focus: (id: string | null) => void;
   parts: UrologyPart[];
 }
 
@@ -102,7 +103,7 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
     canvas.style.display = 'block';
     canvas.style.touchAction = 'none';
     canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Interactive 3D model of the kidneys, ureters, bladder, urethra, prostate and testes. Drag to turn it, scroll or pinch to zoom, and click a structure to learn about it. The same structures are listed in the menu beside it.');
+    canvas.setAttribute('aria-label', 'Interactive 3D model of the kidneys, ureters, bladder, urethra, prostate and testes. Drag to turn it, scroll or pinch to zoom, and click a structure to zoom in on it and learn about it. The same structures are listed in the menu beside it.');
 
     const scene = new T.Scene();
     const camera = new T.PerspectiveCamera(32, 1, 0.01, 10);
@@ -161,6 +162,53 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
       });
     };
 
+    // --- Zoom to the selected part (e.g. a kidney) instead of leaving the user to scroll-zoom in on
+    // a small structure by hand. Animates camera position and orbit target together, sliding along the
+    // camera's current viewing direction so it reads as "zooming in", not a disorienting cut. Selecting
+    // nothing (deselect, or picking the blank dropdown option) animates back to the whole-model framing.
+    let lastFocusedId: string | null = null;
+    const defaultCamPos = new T.Vector3();
+    const defaultTarget = new T.Vector3(0, 0, 0);
+    const focusAnim = {
+      active: false,
+      fromPos: new T.Vector3(), toPos: new T.Vector3(),
+      fromTarget: new T.Vector3(), toTarget: new T.Vector3(),
+      start: 0, duration: reduced ? 1 : 650,
+    };
+    const focusOn = (id: string | null) => {
+      if (id === lastFocusedId) return;
+      lastFocusedId = id;
+      const entry = id ? meshes.get(id) : undefined;
+      let toTarget: T.Vector3;
+      let toPos: T.Vector3;
+      if (entry) {
+        const box = new T.Box3().setFromObject(entry.mesh);
+        const center = box.getCenter(new T.Vector3());
+        // A bounding SPHERE's radius is dominated by a part's longest axis, so a long thin tube like a
+        // ureter (length >> width) would barely zoom in at all — the camera would sit almost as far
+        // back as the whole-model view. The geometric mean of the box's three dimensions instead gives
+        // a representative "how big does this part read as" size regardless of its shape, so a thin
+        // tube frames about as tightly as a round part like a kidney.
+        const dims = box.getSize(new T.Vector3());
+        const effSize = Math.cbrt(Math.max(dims.x, 1e-6) * Math.max(dims.y, 1e-6) * Math.max(dims.z, 1e-6));
+        // Never propose a distance the controls won't allow — OrbitControls would otherwise silently
+        // snap back out to minDistance on the next drag/zoom, undoing the framing.
+        const dist = Math.max(effSize * 3.2, controls.minDistance * 1.15);
+        const dir = camera.position.clone().sub(controls.target).normalize();
+        toTarget = center;
+        toPos = center.clone().add(dir.multiplyScalar(dist));
+      } else {
+        toTarget = defaultTarget.clone();
+        toPos = defaultCamPos.clone();
+      }
+      focusAnim.fromPos.copy(camera.position);
+      focusAnim.toPos.copy(toPos);
+      focusAnim.fromTarget.copy(controls.target);
+      focusAnim.toTarget.copy(toTarget);
+      focusAnim.start = performance.now();
+      focusAnim.active = true;
+    };
+
     // --- Picking: a tap selects a structure; dragging only turns it -----------------------------------
     const raycaster = new T.Raycaster();
     const pointer = new T.Vector2();
@@ -193,6 +241,13 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
     const frame = () => {
       raf = requestAnimationFrame(frame);
       if (document.hidden) return;
+      if (focusAnim.active) {
+        const t = Math.min(1, (performance.now() - focusAnim.start) / focusAnim.duration);
+        const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2; // easeInOutQuad
+        camera.position.lerpVectors(focusAnim.fromPos, focusAnim.toPos, e);
+        controls.target.lerpVectors(focusAnim.fromTarget, focusAnim.toTarget, e);
+        if (t >= 1) focusAnim.active = false;
+      }
       controls.update();
       renderer.render(scene, camera);
     };
@@ -229,7 +284,8 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
         camera.position.set(size * 0.4, size * 0.15, size * 2.1); // the body faces +z, so this is the front
         controls.target.set(0, 0, 0);
         controls.update();
-        api.current = { apply, parts: meta.parts };
+        defaultCamPos.copy(camera.position);
+        api.current = { apply, focus: focusOn, parts: meta.parts };
         setParts(meta.parts);
         apply(state.current);
         setStatus('ready');
@@ -267,6 +323,10 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
     api.current?.apply({ layers, selected, rotate });
   }, [layers, selected, rotate, status]);
 
+  useEffect(() => {
+    api.current?.focus(selected);
+  }, [selected, status]);
+
   const chosen = parts.find((p) => p.id === selected);
   const info = selected ? urologyPartInfo(selected) : undefined;
   const matchedImages = selected ? images.filter((img) => img.organIds.includes(selected)) : [];
@@ -286,6 +346,11 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-1.5">
           <button type="button" aria-pressed={rotate} onClick={() => setRotate((v) => !v)} className={chip(rotate)}>{rotate ? '⏸ Turning' : '▶ Turn it'}</button>
+          {selected && (
+            <button type="button" onClick={() => setSelected(null)} className={chip(false)}>
+              ⤢ Zoom out
+            </button>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Parts to show">
@@ -319,7 +384,7 @@ export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
                 <p className="mt-1 leading-relaxed text-hud-text">{info ?? 'Part of the urinary or reproductive tract.'}</p>
               </>
             ) : (
-              <p className="text-hud-muted">Drag to turn the model, scroll to zoom, and click any part to learn what it does.</p>
+              <p className="text-hud-muted">Drag to turn the model, scroll to zoom, and click any part to zoom in on it and learn what it does.</p>
             )}
           </div>
         </div>
