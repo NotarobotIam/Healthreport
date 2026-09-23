@@ -284,47 +284,54 @@ async function main() {
     img(['ovaries'], 'Right ovary', 'Transverse', 'female-right-ovary-trv.png'),
     img(['ovaries'], 'Left ovary', 'Transverse', 'female-left-ovary-trv.png'),
   ];
+  // The right kidney carries a small nonobstructing stone (see gen-ultrasound.py) so the two sides
+  // — and the report's own Normal/Abnormal badge — visibly differ, instead of a purely-normal demo.
+  const MALE_FINDINGS = 'Right kidney: normal size and echotexture, 10.8 cm, with a 6 mm echogenic focus with posterior '
+    + 'acoustic shadowing in the lower pole collecting system, consistent with a nonobstructing calculus. No hydronephrosis. '
+    + 'Left kidney: normal size and echotexture, 11.0 cm, no hydronephrosis or calculi. '
+    + 'Bladder: normal wall thickness, no masses; post-void residual 15 mL. '
+    + 'Prostate: normal size and contour, estimated volume 22 mL, no focal lesion. '
+    + 'Impression: 6 mm nonobstructing right renal calculus; otherwise normal renal, bladder and prostate ultrasound.';
+  const FEMALE_FINDINGS = 'Right kidney: normal size and echotexture, 10.5 cm, with a 6 mm echogenic focus with posterior '
+    + 'acoustic shadowing in the lower pole collecting system, consistent with a nonobstructing calculus. No hydronephrosis. '
+    + 'Left kidney: normal size and echotexture, 10.7 cm, no hydronephrosis or calculi. '
+    + 'Bladder: normal wall thickness, no masses; well distended at time of scan. '
+    + 'Uterus: anteverted, normal size and contour, endometrial stripe within normal limits. '
+    + 'Ovaries: both normal in size with a normal follicular pattern; no adnexal mass. '
+    + 'Impression: 6 mm nonobstructing right renal calculus; otherwise normal renal and pelvic ultrasound.';
   if (!(await TestReport.exists({ userId: demo._id, 'results.imaging.bodyRegion': /prostate/i }))) {
     const scan = (testName, daysAgoN, imaging) => TestReport.create({
       userId: demo._id, testName, testType: 'Imaging', testDate: new Date(Date.now() - daysAgoN * 86400000),
       results: { imaging },
       doctor: { name: 'Dr. Whitfield', clinic: 'Riverside Radiology' },
       notes: 'Reference example for product demos — not a real scan.',
-      normal: true,
+      normal: false,
     });
     await scan('Ultrasound — Kidneys, bladder and prostate', 45, {
       modality: 'Ultrasound', bodyRegion: 'Kidneys, bladder and prostate',
-      findings: 'Right kidney: normal size and echotexture, 10.8 cm, no hydronephrosis or calculi. '
-        + 'Left kidney: normal size and echotexture, 11.0 cm, no hydronephrosis or calculi. '
-        + 'Bladder: normal wall thickness, no masses; post-void residual 15 mL. '
-        + 'Prostate: normal size and contour, estimated volume 22 mL, no focal lesion. '
-        + 'Impression: normal renal, bladder and prostate ultrasound; no evidence of obstruction or calculi.',
+      findings: MALE_FINDINGS,
       images: MALE_SCAN_IMAGES,
     });
     await scan('Ultrasound — Kidneys, bladder, uterus and ovaries', 45, {
       modality: 'Ultrasound', bodyRegion: 'Kidneys, bladder, uterus and ovaries',
-      findings: 'Right kidney: normal size and echotexture, 10.5 cm, no hydronephrosis or calculi. '
-        + 'Left kidney: normal size and echotexture, 10.7 cm, no hydronephrosis or calculi. '
-        + 'Bladder: normal wall thickness, no masses; well distended at time of scan. '
-        + 'Uterus: anteverted, normal size and contour, endometrial stripe within normal limits. '
-        + 'Ovaries: both normal in size with a normal follicular pattern; no adnexal mass. '
-        + 'Impression: normal renal, bladder and pelvic ultrasound; no sonographic abnormality.',
+      findings: FEMALE_FINDINGS,
       images: FEMALE_SCAN_IMAGES,
     });
     console.log('Added demo ultrasound reports');
   } else {
-    // Backfill: reports created by an older version of this seed predate the `images` library
-    // feature and lack it. Re-running the seed should still upgrade them (see file header).
+    // Backfill: reports created by an older version of this seed predate the `images` library and
+    // the right-kidney-stone finding. Re-running the seed should still upgrade them (see file header).
     const male = await TestReport.findOne({ userId: demo._id, 'results.imaging.bodyRegion': /prostate/i });
     const female = await TestReport.findOne({ userId: demo._id, 'results.imaging.bodyRegion': /uterus/i });
-    for (const [report, images] of [[male, MALE_SCAN_IMAGES], [female, FEMALE_SCAN_IMAGES]]) {
+    for (const [report, images, findings] of [[male, MALE_SCAN_IMAGES, MALE_FINDINGS], [female, FEMALE_SCAN_IMAGES, FEMALE_FINDINGS]]) {
       if (!report) continue;
       const imaging = report.results.get('imaging');
-      if (imaging && !imaging.images) {
-        report.results.set('imaging', { ...imaging, images });
+      if (imaging && (!imaging.images || imaging.findings !== findings)) {
+        report.results.set('imaging', { ...imaging, images, findings });
+        report.normal = false;
         report.markModified('results');
         await report.save();
-        console.log(`Backfilled scan images onto "${report.testName}"`);
+        console.log(`Backfilled scan images/findings onto "${report.testName}"`);
       }
     }
   }
