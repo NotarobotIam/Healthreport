@@ -46,10 +46,26 @@ export interface AnatomySceneProps {
   draftPoint: Vec3 | null;
   picking: boolean;
   cameraRequest: CameraRequest;
+  /** 0 (intact body) to 1 (skeleton laid bare) — peels skin, then muscle, away to reveal what's underneath. */
+  peel: number;
   onPick: (result: PickResult) => void;
   onMarkerClick: (id: string) => void;
   onProgress: (percent: number) => void;
   onError: (message: string) => void;
+}
+
+// The two outer layers fade away in sequence as `peel` rises: skin first (it's already a thin
+// translucent shell even at peel=0), then muscle, leaving the skeleton/organs/vessels/nerves
+// underneath fully opaque throughout — the slider is a smooth version of picking the "Skeleton"
+// preset, rather than a hard cut. Connective tissue is left out of the fade: it belongs partly to
+// muscle and partly to the skeleton, and disappearing it with muscle would strip cartilage that
+// visually belongs with the bones it's still showing.
+const SKIN_BASE_OPACITY = 0.1;
+function skinOpacity(peel: number): number {
+  return SKIN_BASE_OPACITY * (1 - Math.min(1, peel / 0.4));
+}
+function muscleOpacity(peel: number): number {
+  return 1 - Math.min(1, Math.max(0, peel - 0.4) / 0.6);
 }
 
 const BODY_CENTER_Y = 0.86;
@@ -189,14 +205,16 @@ export default function AnatomyScene(props: AnatomySceneProps) {
 
     const materialFor = (system: SystemId) => {
       const isSkin = system === 'integumentary';
+      const isMuscle = system === 'muscular';
+      const peelable = isSkin || isMuscle;
       const m = new T.MeshStandardMaterial({
         color: SYSTEM_BY_ID.get(system)?.color ?? '#aebbb8',
         metalness: 0.08,
         roughness: 0.53,
         side: T.DoubleSide,
-        transparent: isSkin,
-        opacity: isSkin ? 0.1 : 1,
-        depthWrite: !isSkin,
+        transparent: peelable,
+        opacity: isSkin ? skinOpacity(0) : 1,
+        depthWrite: !peelable,
       });
       m.onBeforeCompile = (shader) => {
         shader.uniforms.partState = { value: stateTexture };
@@ -405,10 +423,18 @@ export default function AnatomyScene(props: AnatomySceneProps) {
       let found: { index: number; point: T.Vector3 } | null = null;
       // With any solid structure showing, the translucent skin shell is not a target.
       const hasSolid = atlas.parts.some((p, i) => p.system !== 'integumentary' && stateData[i * 4] > 127);
+      // A layer peeled away to (near-)invisible shouldn't still catch clicks meant for what's now
+      // visibly underneath it — the raycaster otherwise has no notion of a material's opacity.
+      const peel = latest.current.peel;
+      const skinPickable = skinOpacity(peel) >= 0.05;
+      const musclePickable = muscleOpacity(peel) >= 0.05;
       for (let i = 0; i < pickers.length; i++) {
         const mesh = pickers[i];
         if (!mesh || stateData[i * 4] < 128) continue;
-        if (hasSolid && atlas.parts[i].system === 'integumentary') continue;
+        const system = atlas.parts[i].system;
+        if (hasSolid && system === 'integumentary') continue;
+        if (!skinPickable && system === 'integumentary') continue;
+        if (!musclePickable && system === 'muscular') continue;
         if (!raycaster.ray.intersectBox(bounds[i], hitPoint)) continue;
         const hit = raycaster.intersectObject(mesh, false)[0];
         if (hit && hit.distance < nearest) {
@@ -499,6 +525,15 @@ export default function AnatomyScene(props: AnatomySceneProps) {
     let lastActive: string | null | undefined;
     let lastDraft: Vec3 | null | undefined;
     let lastCameraNonce = latest.current.cameraRequest.nonce;
+    let lastPeel = -1;
+
+    const applyPeel = (peel: number) => {
+      const skin = systemMaterials.get('integumentary') as T.MeshStandardMaterial | undefined;
+      const muscle = systemMaterials.get('muscular') as T.MeshStandardMaterial | undefined;
+      if (skin) skin.opacity = skinOpacity(peel);
+      if (muscle) muscle.opacity = muscleOpacity(peel);
+      dirty = true;
+    };
 
     const applyPartState = () => {
       const { visible, selectedPartId, draftPoint } = latest.current;
@@ -536,6 +571,10 @@ export default function AnatomyScene(props: AnatomySceneProps) {
         lastMarkers = s.markers;
         lastActive = s.activeMarkerId;
         lastDraft = s.draftPoint;
+      }
+      if (s.peel !== lastPeel) {
+        applyPeel(s.peel);
+        lastPeel = s.peel;
       }
       if (s.cameraRequest.nonce !== lastCameraNonce) {
         lastCameraNonce = s.cameraRequest.nonce;

@@ -38,6 +38,7 @@ export function AnatomyPage() {
   const [sceneError, setSceneError] = useState<string | null>(null);
 
   const [visible, setVisible] = useState<SystemId[]>(DEFAULT_VISIBLE);
+  const [peel, setPeel] = useState(0);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [lastPick, setLastPick] = useState<PickResult | null>(null);
   const [cameraRequest, setCameraRequest] = useState<CameraRequest>({ nonce: 0 });
@@ -278,7 +279,7 @@ export function AnatomyPage() {
     <div className="flex h-full w-full">
       <aside className="hidden w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-hud-border bg-hud-panel p-4 lg:flex">
         {atlas && <PartSearch atlas={atlas} onSelect={selectFromSearch} />}
-        <LayerPanel visible={visible} onChange={setVisible} />
+        <LayerPanel visible={visible} onChange={setVisible} peel={peel} onPeelChange={setPeel} />
         <Link
           to="/urology"
           className="mt-auto rounded-lg border border-hud-borderLight bg-hud-panel2 px-3 py-2.5 text-xs leading-relaxed text-hud-text hover:border-hud-cyan"
@@ -305,6 +306,7 @@ export function AnatomyPage() {
               draftPoint={draftPoint}
               picking={mode === 'picking' || (mode === 'form' && !editingId)}
               cameraRequest={cameraRequest}
+              peel={peel}
               onPick={handlePick}
               onMarkerClick={handleMarkerClick}
               onProgress={setProgress}

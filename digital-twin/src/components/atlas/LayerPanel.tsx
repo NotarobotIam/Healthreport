@@ -3,16 +3,41 @@ import { LAYER_PRESETS, SYSTEMS, type SystemId } from '../../atlas/anatomy';
 interface LayerPanelProps {
   visible: SystemId[];
   onChange: (systems: SystemId[]) => void;
+  peel: number;
+  onPeelChange: (peel: number) => void;
 }
 
 const sameSet = (a: SystemId[], b: SystemId[]) => a.length === b.length && a.every((s) => b.includes(s));
 
-export function LayerPanel({ visible, onChange }: LayerPanelProps) {
+export function LayerPanel({ visible, onChange, peel, onPeelChange }: LayerPanelProps) {
   const toggle = (id: SystemId) =>
     onChange(visible.includes(id) ? visible.filter((s) => s !== id) : [...visible, id]);
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="hud-panel-title">Peel layers</h2>
+          <span className="text-[11px] text-hud-muted">
+            {peel < 0.05 ? 'Skin' : peel < 0.4 ? 'Under the skin' : peel < 0.95 ? 'Under the muscle' : 'Skeleton'}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(peel * 100)}
+          onChange={(e) => onPeelChange(Number(e.target.value) / 100)}
+          aria-label="Peel away layers, from skin to skeleton"
+          className="w-full accent-hud-cyan"
+        />
+        <div className="mt-0.5 flex justify-between text-[10px] text-hud-muted">
+          <span>Skin</span>
+          <span>Muscle</span>
+          <span>Skeleton</span>
+        </div>
+      </div>
+
       <div>
         <h2 className="hud-panel-title mb-2">Show</h2>
         <div className="flex flex-wrap gap-1.5">
