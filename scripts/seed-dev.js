@@ -124,6 +124,8 @@ async function main() {
     { handle: 'demo_desk_job', bio: 'Demo member. Desk worker, lower back.', pain: [[parts.back, ['dull', 'aching'], 5, 200, 'constant']] },
     { handle: 'demo_carpenter', bio: 'Demo member.', pain: [[parts.back, ['sharp', 'shooting'], 8, 9, 'getting-worse']] },
     { handle: 'demo_cyclist', bio: 'Demo member.', pain: [[parts.thigh, ['cramping'], 4, 15, 'comes-and-goes']] },
+    { handle: 'demo_survivor', bio: 'Demo member. Bladder cancer survivor, three years post-treatment.', pain: [] },
+    { handle: 'demo_ttc', bio: 'Demo member. Navigating fertility testing with my partner.', pain: [] },
   ];
   const created = {};
   for (const m of members) {
@@ -170,15 +172,38 @@ async function main() {
     console.log('Created demo threads and replies');
   }
 
+  // --- urology community threads (bladder cancer, fertility), no body-region link
+  if (!(await Thread.exists({ authorId: created.demo_survivor._id }))) {
+    const t = await Thread.create({
+      authorId: created.demo_survivor._id, title: 'Three years cancer-free — what I wish I had known at diagnosis',
+      body: 'I was diagnosed with early-stage bladder cancer after months of blaming blood in my urine on a UTI. TURBT plus a round of BCG and I have had clear cystoscopies ever since. If you are newly diagnosed: the surveillance cystoscopies get less scary each time, and it is okay to ask your urologist to explain grade and stage in plain language — I did not understand mine at first either.',
+      group: 'bladder-cancer', lastActivityAt: new Date(),
+    });
+    await Reply.create({ threadId: t._id, authorId: created.demo_desk_job._id, body: 'Thank you for writing this. My dad was just diagnosed and the staging terminology has been the hardest part for our family to follow.' });
+    await Thread.updateOne({ _id: t._id }, { replyCount: 1, lastActivityAt: new Date() });
+  }
+  if (!(await Thread.exists({ authorId: created.demo_ttc._id }))) {
+    const t = await Thread.create({
+      authorId: created.demo_ttc._id, title: 'Starting male-factor fertility testing next week — nervous',
+      body: 'After a year of trying, my partner’s workup came back normal so I am the one seeing a urologist for a semen analysis and hormone panel next week. Trying not to catastrophize before I even have results. Has anyone been through the male-side workup and can say what to actually expect at the appointment?',
+      group: 'fertility', lastActivityAt: new Date(),
+    });
+    await Reply.create({ threadId: t._id, authorId: created.demo_swimmer._id, body: 'My husband went through this. The appointment itself was quick and low-key — the waiting for lab results was the hard part, not the visit.' });
+    await Thread.updateOne({ _id: t._id }, { replyCount: 1, lastActivityAt: new Date() });
+    console.log('Created demo urology community threads');
+  }
+
   // --- communities, friends (idempotent, so re-running upgrades an older seed)
   const join = (u, slug) => Membership.updateOne({ userId: u._id, group: slug }, { $setOnInsert: { joinedAt: new Date() } }, { upsert: true });
   const memberships = {
     'chronic-pain': ['demo_gardener', 'demo_swimmer', 'demo_painter', 'demo_desk_job', 'demo_carpenter'],
     'back-neck-pain': ['demo_desk_job', 'demo_carpenter', 'demo_cyclist'],
     osteoarthritis: ['demo_runner', 'demo_hiker', 'demo_swimmer'],
+    'bladder-cancer': ['demo_survivor', 'demo_desk_job'],
+    fertility: ['demo_ttc', 'demo_swimmer'],
   };
   for (const [slug, handles] of Object.entries(memberships)) for (const h of handles) await join(created[h], slug);
-  for (const slug of ['chronic-pain', 'back-neck-pain', 'ibs']) await join(demo, slug);
+  for (const slug of ['chronic-pain', 'back-neck-pain', 'ibs', 'bladder-cancer', 'fertility']) await join(demo, slug);
 
   const tag = (title, group) => Thread.updateMany({ title, group: { $exists: false } }, { $set: { group } });
   await tag('Sharp pain in my shoulder when I lift my arm', 'chronic-pain');
@@ -241,6 +266,24 @@ async function main() {
 
   // --- two reference ultrasound reports (male and female), for demoing the Imaging/scan report type.
   // Findings are plausible normal-reference text, not a real scan — clearly labelled as such below.
+  // `organIds` lists every id — from both the 2D diagram (urologyInfo.ts) and the 3D model
+  // (extract-urology.js) — that should surface this image when clicked. The 3D model has no
+  // uterus/ovary geometry (adult-male-only dataset), so those images only key off the 2D id.
+  const img = (organIds, label, view, file) => ({ organIds, label, view, url: `/images/ultrasound/${file}` });
+  const MALE_SCAN_IMAGES = [
+    img(['kidneys', 'right-kidney'], 'Right kidney', 'Sagittal', 'male-right-kidney-sag.png'),
+    img(['kidneys', 'left-kidney'], 'Left kidney', 'Sagittal', 'male-left-kidney-sag.png'),
+    img(['bladder'], 'Urinary bladder', 'Transverse', 'male-bladder-trv.png'),
+    img(['prostate'], 'Prostate (TRUS)', 'Axial', 'male-prostate-ax.png'),
+  ];
+  const FEMALE_SCAN_IMAGES = [
+    img(['kidneys', 'right-kidney'], 'Right kidney', 'Sagittal', 'female-right-kidney-sag.png'),
+    img(['kidneys', 'left-kidney'], 'Left kidney', 'Sagittal', 'female-left-kidney-sag.png'),
+    img(['bladder'], 'Urinary bladder', 'Transverse', 'female-bladder-trv.png'),
+    img(['uterus'], 'Uterus', 'Sagittal', 'female-uterus-sag.png'),
+    img(['ovaries'], 'Right ovary', 'Transverse', 'female-right-ovary-trv.png'),
+    img(['ovaries'], 'Left ovary', 'Transverse', 'female-left-ovary-trv.png'),
+  ];
   if (!(await TestReport.exists({ userId: demo._id, 'results.imaging.bodyRegion': /prostate/i }))) {
     const scan = (testName, daysAgoN, imaging) => TestReport.create({
       userId: demo._id, testName, testType: 'Imaging', testDate: new Date(Date.now() - daysAgoN * 86400000),
@@ -256,6 +299,7 @@ async function main() {
         + 'Bladder: normal wall thickness, no masses; post-void residual 15 mL. '
         + 'Prostate: normal size and contour, estimated volume 22 mL, no focal lesion. '
         + 'Impression: normal renal, bladder and prostate ultrasound; no evidence of obstruction or calculi.',
+      images: MALE_SCAN_IMAGES,
     });
     await scan('Ultrasound — Kidneys, bladder, uterus and ovaries', 45, {
       modality: 'Ultrasound', bodyRegion: 'Kidneys, bladder, uterus and ovaries',
@@ -265,8 +309,24 @@ async function main() {
         + 'Uterus: anteverted, normal size and contour, endometrial stripe within normal limits. '
         + 'Ovaries: both normal in size with a normal follicular pattern; no adnexal mass. '
         + 'Impression: normal renal, bladder and pelvic ultrasound; no sonographic abnormality.',
+      images: FEMALE_SCAN_IMAGES,
     });
     console.log('Added demo ultrasound reports');
+  } else {
+    // Backfill: reports created by an older version of this seed predate the `images` library
+    // feature and lack it. Re-running the seed should still upgrade them (see file header).
+    const male = await TestReport.findOne({ userId: demo._id, 'results.imaging.bodyRegion': /prostate/i });
+    const female = await TestReport.findOne({ userId: demo._id, 'results.imaging.bodyRegion': /uterus/i });
+    for (const [report, images] of [[male, MALE_SCAN_IMAGES], [female, FEMALE_SCAN_IMAGES]]) {
+      if (!report) continue;
+      const imaging = report.results.get('imaging');
+      if (imaging && !imaging.images) {
+        report.results.set('imaging', { ...imaging, images });
+        report.markModified('results');
+        await report.save();
+        console.log(`Backfilled scan images onto "${report.testName}"`);
+      }
+    }
   }
 
   // --- enough pain logs for the demo login to try AI insights (idempotent)

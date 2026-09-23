@@ -16,7 +16,8 @@ import {
 import { Badge } from '../components/common';
 import { fieldLabel as examFieldLabel } from '../data/physiology/examCatalog';
 import { GUT_BACTERIA_INFO, gutFieldLabel } from '../data/pathology/gutCatalog';
-import type { ReportDTO } from '../types';
+import { ScanImageGallery } from '../components/reports/ScanImageGallery';
+import type { ImagingScanImage, ReportDTO } from '../types';
 
 interface EditFormData {
   notes: string;
@@ -105,7 +106,8 @@ export function ReportDetailPage() {
     // own friendly row instead of dumping the raw object as a single "imaging: {...}" line.
     if (key === 'imaging' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
       return Object.entries(value as Record<string, unknown>)
-        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        // `images` (the per-organ scan library) gets its own gallery below, not a raw table row.
+        .filter(([k, v]) => k !== 'images' && v !== undefined && v !== null && v !== '')
         .map(([k, v]): [string, unknown] => [`imaging.${k}`, v]);
     }
     return [[key, value] as [string, unknown]];
@@ -115,6 +117,7 @@ export function ReportDetailPage() {
   const bacteriaGlossary = isMicrobiome ? resultEntries.filter(([key]) => key in GUT_BACTERIA_INFO) : [];
   const bodyRegion = String((rawResults.imaging as { bodyRegion?: string } | undefined)?.bodyRegion ?? '');
   const urologySex = /prostate/i.test(bodyRegion) ? 'male' : /uterus|ovar/i.test(bodyRegion) ? 'female' : null;
+  const scanImages = (rawResults.imaging as { images?: ImagingScanImage[] } | undefined)?.images ?? [];
 
   return (
     <PageContainer>
@@ -134,6 +137,13 @@ export function ReportDetailPage() {
             <p className="text-sm text-hud-text">
               See a labelled diagram of this anatomy: <Link to="/urology" className="font-medium text-hud-cyan hover:underline">Urologic &amp; reproductive anatomy →</Link>
             </p>
+          </Card>
+        )}
+
+        {scanImages.length > 0 && (
+          <Card className="mb-7">
+            <h3 className="mb-3 text-base font-semibold text-hud-text">Scan images</h3>
+            <ScanImageGallery images={scanImages} />
           </Card>
         )}
 

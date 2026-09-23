@@ -5,6 +5,8 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { decodeModelResponse } from '../../atlas/modelDownload';
 import { PointerTap } from '../../atlas/pointerTap';
 import { UROLOGY_LAYERS, urologyPartInfo, type UrologyLayer } from '../../data/anatomy/urologyViewerInfo';
+import { ScanImageGallery } from '../reports/ScanImageGallery';
+import type { ImagingScanImage } from '../../types';
 
 interface UrologyPart {
   id: string;
@@ -50,7 +52,12 @@ const chip = (on: boolean) =>
  * heart model use, not an illustration. There is no equivalent female dataset — see this page's diagram
  * for that side.
  */
-export default function UrologyViewer() {
+interface UrologyViewerProps {
+  /** The signed-in member's own scan images, e.g. from an Imaging report. Shown when a matching structure is selected. */
+  images?: ImagingScanImage[];
+}
+
+export default function UrologyViewer({ images = [] }: UrologyViewerProps) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<SceneApi | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -262,6 +269,7 @@ export default function UrologyViewer() {
 
   const chosen = parts.find((p) => p.id === selected);
   const info = selected ? urologyPartInfo(selected) : undefined;
+  const matchedImages = selected ? images.filter((img) => img.organIds.includes(selected)) : [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -315,6 +323,8 @@ export default function UrologyViewer() {
             )}
           </div>
         </div>
+
+        {matchedImages.length > 0 && <ScanImageGallery images={matchedImages} context={chosen?.name} />}
       </div>
 
       <p className="text-xs text-hud-muted">

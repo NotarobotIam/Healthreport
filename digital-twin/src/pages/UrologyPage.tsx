@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageContainer, PageHeader } from '../components/dashboardUi';
 import { UrologyDiagram } from '../components/anatomy/UrologyDiagram';
+import { ScanImageGallery } from '../components/reports/ScanImageGallery';
 import { UROLOGY_BY_SEX, type UrologySex } from '../data/anatomy/urologyInfo';
 import { fetchReports } from '../data/remote/reportsApi';
-import type { ReportDTO } from '../types';
+import type { ImagingScanImage, ReportDTO } from '../types';
 
 // Three.js is ~1 MB; keep it out of the main bundle until this page is opened.
 const UrologyViewer = lazy(() => import('../components/anatomy/UrologyViewer'));
@@ -35,6 +36,11 @@ export function UrologyPage() {
     () => findExampleReport(reports, sex === 'male' ? /prostate/i : /uterus|ovar/i),
     [reports, sex],
   );
+  const scanImages = useMemo(
+    () => (exampleReport?.results as { imaging?: { images?: ImagingScanImage[] } } | undefined)?.imaging?.images ?? [],
+    [exampleReport],
+  );
+  const chosenImages = useMemo(() => (selected ? scanImages.filter((img) => img.organIds.includes(selected)) : []), [scanImages, selected]);
 
   const change = (s: UrologySex) => {
     setSex(s);
@@ -48,7 +54,7 @@ export function UrologyPage() {
       <div className="mx-auto mb-8 max-w-3xl rounded-2xl bg-hud-panel p-4 shadow-sm sm:p-5">
         <h2 className="mb-3 text-base font-semibold text-hud-text">Your urinary tract & testes in 3D</h2>
         <Suspense fallback={<p className="py-10 text-center text-sm text-hud-muted">Loading the 3D model…</p>}>
-          <UrologyViewer />
+          <UrologyViewer images={scanImages} />
         </Suspense>
       </div>
 
@@ -106,6 +112,8 @@ export function UrologyPage() {
               <p className="text-hud-muted">Click a shape or a label to learn what it does.</p>
             )}
           </div>
+
+          {chosenImages.length > 0 && <ScanImageGallery images={chosenImages} context={chosen?.name} />}
 
           {exampleReport && (
             <div className="rounded-2xl bg-hud-panel p-4 shadow-sm">

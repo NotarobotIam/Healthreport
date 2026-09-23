@@ -4,10 +4,20 @@
 // internal model.
 import type { BodyRegionState } from './physiology';
 
+export interface ImagingScanImage {
+  /** Every anatomy-diagram / 3D-model part id (see urologyInfo.ts, urologyViewerInfo.ts) that should surface this image when clicked. */
+  organIds: string[];
+  label: string;
+  view?: string;
+  url: string;
+}
+
 export interface ImagingMetadata {
   modality?: 'CT' | 'Ultrasound' | 'MRI' | string;
   bodyRegion?: string;
   findings?: string;
+  /** Per-organ scan images attached to this report, browsable from the anatomy model/diagram. */
+  images?: ImagingScanImage[];
 }
 
 export interface ReportDoctor {
