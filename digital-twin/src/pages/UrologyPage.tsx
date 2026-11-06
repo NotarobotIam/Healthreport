@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageContainer, PageHeader } from '../components/dashboardUi';
+import { SketchfabEmbed } from '../components/anatomy/SketchfabEmbed';
 import { UrologyDiagram } from '../components/anatomy/UrologyDiagram';
 import { ScanImageGallery } from '../components/reports/ScanImageGallery';
 import { UROLOGY_BY_SEX, type UrologySex } from '../data/anatomy/urologyInfo';
@@ -124,6 +125,17 @@ export function UrologyPage() {
           )}
         </div>
       </div>
+
+      {sex === 'female' && (
+        <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-hud-panel p-4 shadow-sm sm:p-5">
+          <h2 className="mb-1 text-base font-semibold text-hud-text">Uterus with endometriosis in 3D</h2>
+          <p className="mb-3 text-sm text-hud-muted">
+            Endometriosis is when tissue like the uterus lining grows outside the uterus. Drag to turn the model, scroll to zoom.{' '}
+            <Link to="/community/g/endometriosis" className="text-hud-cyan hover:underline">Endometriosis community →</Link>
+          </p>
+          <SketchfabEmbed modelId="4a58f93ac4104bd087fff9977c735d67" title="Uterus with Endometriosis" />
+        </div>
+      )}
     </PageContainer>
   );
 }
