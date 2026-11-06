@@ -29,13 +29,18 @@ const Vital = require('../models/Vital');
 const AiInsight = require('../models/AiInsight');
 const fixtures = require('./demoFixtures');
 
-const DEMO_LOGIN = { email: 'demo@test.com', password: 'demo-password-2026', handle: 'demo_user' };
+// DEMO_PASSWORD overrides the default (which is public in this repo) when seeding a database
+// other people can reach, e.g. ALLOW_REMOTE_SEED=1 for a hosted demo.
+const DEMO_LOGIN = { email: 'demo@test.com', password: process.env.DEMO_PASSWORD || 'demo-password-2026', handle: 'demo_user' };
 const isDemoEmail = (e) => e === DEMO_LOGIN.email || e.endsWith('@demo.invalid');
 
 function refuseUnsafeTarget() {
   if (config.isProd) throw new Error('Refusing to seed: NODE_ENV=production.');
   if (!/127\.0\.0\.1|localhost/.test(config.mongoUri) && process.env.ALLOW_REMOTE_SEED !== '1') {
     throw new Error(`Refusing to seed a non-local database (${config.mongoUri.replace(/\/\/.*@/, '//***@')}). Set ALLOW_REMOTE_SEED=1 to override.`);
+  }
+  if (!/127\.0\.0\.1|localhost/.test(config.mongoUri) && !process.env.DEMO_PASSWORD) {
+    throw new Error('Set DEMO_PASSWORD when seeding a non-local database: the default demo password is public in this repo.');
   }
 }
 

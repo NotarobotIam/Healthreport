@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -17,7 +18,20 @@ function createApp() {
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', config.trustProxy);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        // Helmet's defaults plus what the built frontend (served below in production) needs:
+        // 3D model textures decode from blob: URLs, the hospital map loads OpenStreetMap tiles,
+        // and the Urology page embeds a Sketchfab model.
+        directives: {
+          'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org'],
+          'connect-src': ["'self'", 'blob:', 'data:'],
+          'frame-src': ['https://sketchfab.com'],
+        },
+      },
+    }),
+  );
   app.use(
     cors({
       origin(origin, cb) {
@@ -47,6 +61,28 @@ function createApp() {
   app.get('/api/health', (req, res) => {
     res.json({ status: 'Server is running', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
   });
+
+  // In production this one server also serves the built frontend (digital-twin/dist), so the
+  // whole site is a single origin — as the Vite proxy makes it in dev. Unknown non-API paths get
+  // index.html so client-side routes like /dashboard survive a reload.
+  if (config.isProd) {
+    const dist = path.join(__dirname, 'digital-twin', 'dist');
+    app.use(
+      express.static(dist, {
+        index: false,
+        setHeaders(res, filePath) {
+          // Vite content-hashes everything under /assets, so those never go stale.
+          if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        },
+      }),
+    );
+    app.get(/^\/(?!api(\/|$)).*/, (req, res, next) => {
+      // A missing file (e.g. a stale chunk after a redeploy) is a 404, not the app shell.
+      if (path.extname(req.path)) return next();
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(path.join(dist, 'index.html'));
+    });
+  }
 
   app.use(notFound);
   app.use(errorHandler);

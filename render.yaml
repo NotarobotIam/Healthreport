@@ -1,0 +1,25 @@
+# Render Blueprint: one web service that runs the Express API and serves the built
+# frontend (see app.js). The database is hosted separately (MongoDB Atlas); paste its
+# connection string as MONGODB_URI when Render asks for it.
+services:
+  - type: web
+    name: healthreport
+    runtime: node
+    plan: free
+    # The frontend's build tools (vite, typescript) are devDependencies, which npm skips
+    # under NODE_ENV=production unless asked.
+    buildCommand: npm ci && npm ci --prefix digital-twin --include=dev && npm run build
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      # Render sits behind a proxy; lets rate limiting see real client IPs.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false

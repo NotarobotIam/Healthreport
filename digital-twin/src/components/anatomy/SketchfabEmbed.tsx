@@ -12,7 +12,6 @@ export function SketchfabEmbed({ modelId, title }: SketchfabEmbedProps) {
         title={title}
         src={`https://sketchfab.com/models/${modelId}/embed?autospin=1&autostart=1&preload=1&transparent=1`}
         allow="autoplay; fullscreen; xr-spatial-tracking"
-        allowFullScreen
         loading="lazy"
         className="h-full w-full border-0"
       />
