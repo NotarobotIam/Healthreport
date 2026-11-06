@@ -20,3 +20,6 @@ build/
 *.sublime-workspace
 client/build/
 client/node_modules/
+
+# Local server output
+*.log
